@@ -103,6 +103,47 @@
       display: inline-block;
     }
 
+    h1 {
+      font-family: Arial, sans-serif;
+      margin: 0 0 14px;
+    }
+
+    #password-gate {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+    #password-form {
+      text-align: center;
+      background: #f2f2f2;
+      padding: 30px 40px;
+      border-radius: 12px;
+    }
+    #password-input {
+      display: block;
+      margin: 10px auto;
+      padding: 8px 10px;
+      font-size: 14px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+    }
+    #password-hint {
+      color: #c00;
+      font-size: 13px;
+      min-height: 16px;
+    }
+    body.too-bad {
+      background: red;
+    }
+    #too-bad-text {
+      font-size: 15vw;
+      font-weight: bold;
+      color: white;
+      text-align: center;
+    }
+
     #search {
       display: block;
       margin-bottom: 12px;
@@ -176,9 +217,22 @@
 </head>
 <body>
 
-  <input type="text" id="search" placeholder="Search by symbol, name, or atomic number...">
+  <div id="password-gate">
+    <form id="password-form">
+      <h2>Enter password</h2>
+      <input type="password" id="password-input" autofocus>
+      <button type="submit">Unlock</button>
+      <p id="password-hint"></p>
+    </form>
+  </div>
 
-  <div class="periodic-table">
+  <div id="main-content" style="display: none;">
+
+    <h1>Periodic Table</h1>
+
+    <input type="text" id="search" placeholder="Search by symbol, name, or atomic number...">
+
+    <div class="periodic-table">
     <div class="element-tile nonmetal" style="grid-column: 1; grid-row: 1;"
          data-symbol="h" data-name="hydrogen" data-number="1"
          data-display-name="Hydrogen" data-display-symbol="H"
@@ -1247,9 +1301,9 @@
       <div class="symbol">Lr</div>
       <div class="name">Lawrencium</div>
     </div>
-  </div>
+    </div>
 
-  <div class="legend">
+    <div class="legend">
     <div class="legend-item">
       <span class="legend-swatch" style="background-color: #ff8a65;"></span>
       <span>Alkali Metal</span>
@@ -1294,16 +1348,49 @@
       <span class="legend-swatch" style="background-color: #616161;"></span>
       <span>Unknown / Predicted</span>
     </div>
-  </div>
-
-  <div id="modal-overlay">
-    <div id="modal-box">
-      <button id="modal-close">&times;</button>
-      <div id="modal-body"></div>
     </div>
+
+    <div id="modal-overlay">
+      <div id="modal-box">
+        <button id="modal-close">&times;</button>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+
   </div>
 
   <script>
+    const PASSWORD = "technetium";
+    let wrongAttempts = 0;
+
+    const passwordGate = document.getElementById("password-gate");
+    const passwordForm = document.getElementById("password-form");
+    const passwordInput = document.getElementById("password-input");
+    const passwordHint = document.getElementById("password-hint");
+    const mainContent = document.getElementById("main-content");
+
+    passwordForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const guess = passwordInput.value.trim().toLowerCase();
+
+      if (guess === PASSWORD) {
+        passwordGate.style.display = "none";
+        mainContent.style.display = "block";
+        return;
+      }
+
+      wrongAttempts++;
+      if (wrongAttempts >= 3) {
+        document.body.classList.add("too-bad");
+        passwordGate.innerHTML = '<div id="too-bad-text">TOO BAD</div>';
+        return;
+      }
+
+      passwordHint.textContent = `Wrong password. ${3 - wrongAttempts} attempt(s) left.`;
+      passwordInput.value = "";
+      passwordInput.focus();
+    });
+
     const searchBox = document.getElementById("search");
     const tiles = document.querySelectorAll(".element-tile");
 
