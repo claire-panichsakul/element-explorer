@@ -205,6 +205,15 @@
       margin: 4px 0;
       font-size: 14px;
     }
+    #pronounce-btn {
+      margin-left: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      background: #f2f2f2;
+      cursor: pointer;
+    }
     .family-tag {
       margin-top: 10px !important;
       padding: 6px 10px;
@@ -1438,19 +1447,30 @@
           <p>Atomic number: ${tile.dataset.number}</p>
           <p>Atomic mass: ${tile.dataset.mass}</p>
           <p>Valence electrons: ${tile.dataset.valence}</p>
-          <p>Pronunciation: ${tile.dataset.pronunciation}</p>
+          <p>Pronunciation: ${tile.dataset.pronunciation}
+            <button id="pronounce-btn" type="button">🔊 Play</button>
+          </p>
           <p>${tile.dataset.year}</p>
           ${familyLine}
         `;
         modalOverlay.classList.add("show");
+
+        document.getElementById("pronounce-btn").addEventListener("click", () => {
+          speechSynthesis.cancel();
+          speechSynthesis.speak(new SpeechSynthesisUtterance(tile.dataset.displayName));
+        });
       });
     });
 
     modalOverlay.addEventListener("click", (event) => {
-      if (event.target === modalOverlay) modalOverlay.classList.remove("show");
+      if (event.target === modalOverlay) {
+        modalOverlay.classList.remove("show");
+        speechSynthesis.cancel();
+      }
     });
     document.getElementById("modal-close").addEventListener("click", () => {
       modalOverlay.classList.remove("show");
+      speechSynthesis.cancel();
     });
   </script>
 
