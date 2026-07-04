@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Element Explorer</title>
+  <style>
+    .periodic-table {
+      display: grid;
+      grid-template-columns: repeat(18, 56px);
+      grid-auto-rows: 56px;
+      gap: 3px;
+    }
+    .element-tile {
+      position: relative;
+      border-radius: 8px;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease;
+      overflow: hidden;
+    }
+    .element-tile:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 12px 3px gold;
+      z-index: 10;
+    }
+    .atomic-number {
+      font-size: 8px;
+      align-self: flex-start;
+      margin: 2px 0 0 4px;
+    }
+    .symbol {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .name {
+      font-size: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90%;
+    }
+    .placeholder {
+      opacity: 0.5;
+      font-size: 9px;
+    }
+    .placeholder .symbol {
+      font-size: 9px;
+    }
+
+    /* sparkle effect, drawn with ::before/::after so we don't
+       need extra HTML elements on every tile */
+    .element-tile::before,
+    .element-tile::after {
+      content: "✨";
+      position: absolute;
+      font-size: 12px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .element-tile::before { top: -6px; left: -6px; }
+    .element-tile::after { bottom: -6px; right: -6px; }
+    .element-tile:hover::before { animation: twinkle 1s ease-in-out infinite; }
+    .element-tile:hover::after { animation: twinkle 1s ease-in-out infinite 0.4s; }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0; transform: scale(0.5); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* one color per element category */
+    .alkali-metal { background-color: #ff8a65; }
+    .alkaline-earth { background-color: #ffd54f; }
+    .transition-metal { background-color: #64b5f6; }
+    .post-transition-metal { background-color: #a1887f; }
+    .metalloid { background-color: #4db6ac; }
+    .nonmetal { background-color: #81c784; }
+    .halogen { background-color: #cddc39; }
+    .noble-gas { background-color: #ba68c8; }
+    .lanthanide { background-color: #f06292; }
+    .actinide { background-color: #e57373; }
+    .unknown { background-color: #616161; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      margin-top: 16px;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    #search {
+      display: block;
+      margin-bottom: 12px;
+      padding: 8px 10px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      width: 340px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+    }
+    .element-tile.dimmed {
+      opacity: 0.12;
+    }
+    .element-tile.matched {
+      transform: scale(1.25);
+      box-shadow: 0 0 14px 4px gold;
+      z-index: 20;
+    }
+    .element-tile:not(.placeholder) {
+      cursor: pointer;
+    }
+
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    #modal-overlay.show {
+      display: flex;
+    }
+    #modal-box {
+      position: relative;
+      background: white;
+      color: #222;
+      font-family: Arial, sans-serif;
+      border-radius: 12px;
+      padding: 24px 28px;
+      min-width: 240px;
+      text-align: center;
+    }
+    #modal-close {
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: #888;
+    }
+    #modal-box h2 {
+      margin: 0 0 4px;
+    }
+    #modal-box p {
+      margin: 4px 0;
+      font-size: 14px;
+    }
+    .family-tag {
+      margin-top: 10px !important;
+      padding: 6px 10px;
+      background: #fff8e1;
+      border-radius: 6px;
+      font-weight: bold;
+      color: #7a5b00;
+    }
+  </style>
+</head>
+<body>
+
+  <input type="text" id="search" placeholder="Search by symbol, name, or atomic number...">
+
+  <div class="periodic-table">
+    <div class="element-tile nonmetal" style="grid-column: 1; grid-row: 1;"
+         data-symbol="h" data-name="hydrogen" data-number="1"
+         data-display-name="Hydrogen" data-display-symbol="H"
+         data-mass="1.01" data-valence="1"
+         data-pronunciation="HY-dro-jen" data-year="Discovered in 1766">
+      <div class="atomic-number">1</div>
+      <div class="symbol">H</div>
+      <div class="name">Hydrogen</div>
+    </div>
+    <div class="element-tile noble-gas" style="grid-column: 18; grid-row: 1;"
+         data-symbol="he" data-name="helium" data-number="2"
+         data-display-name="Helium" data-display-symbol="He"
+         data-mass="4.0" data-valence="2"
+         data-pronunciation="HEE-lee-um" data-year="Discovered in 1895">
+      <div class="atomic-number">2</div>
+      <div class="symbol">He</div>
+      <div class="name">Helium</div>
+    </div>
+    <div class="element-tile alkali-metal" style="grid-column: 1; grid-row: 2;"
+         data-symbol="li" data-name="lithium" data-number="3"
+         data-display-name="Lithium" data-display-symbol="Li"
+         data-mass="6.94" data-valence="1"
+         data-pronunciation="LITH-ee-um" data-year="Discovered in 1817">
+      <div class="atomic-number">3</div>
+      <div class="symbol">Li</div>
+      <div class="name">Lithium</div>
+    </div>
+    <div class="element-tile alkaline-earth" style="grid-column: 2; grid-row: 2;"
+         data-symbol="be" data-name="beryllium" data-number="4"
+         data-display-name="Beryllium" data-display-symbol="Be"
+         data-mass="9.01" data-valence="2"
+         data-pronunciation="buh-RIL-ee-um" data-year="Discovered in 1798">
+      <div class="atomic-number">4</div>
+      <div class="symbol">Be</div>
+      <div class="name">Beryllium</div>
+    </div>
+    <div class="element-tile metalloid" style="grid-column: 13; grid-row: 2;"
+         data-symbol="b" data-name="boron" data-number="5"
+         data-display-name="Boron" data-display-symbol="B"
+         data-mass="10.81" data-valence="3"
+         data-pronunciation="BOR-on" data-year="Discovered in 1808">
+      <div class="atomic-number">5</div>
+      <div class="symbol">B</div>
+      <div class="name">Boron</div>
+    </div>
+    <div class="element-tile nonmetal" style="grid-column: 14; grid-row: 2;"
+         data-symbol="c" data-name="carbon" data-number="6"
+         data-display-name="Carbon" data-display-symbol="C"
+         data-mass="12.01" data-valence="4"
+         data-pronunciation="KAR-bon" data-year="Known since ancient times">
+      <div class="atomic-number">6</div>
+      <div class="symbol">C</div>
+      <div class="name">Carbon</div>
+    </div>
+    <div class="element-tile nonmetal" style="grid-column: 15; grid-row: 2;"
+         data-symbol="n" data-name="nitrogen" data-number="7"
+         data-display-name="Nitrogen" data-display-symbol="N"
+         data-mass="14.01" data-valence="5"
+         data-pronunciation="NY-truh-jen" data-year="Discovered in 1772">
+      <div class="atomic-number">7</div>
+      <div class="symbol">N</div>
+      <div class="name">Nitrogen</div>
+    </div>
+    <div class="element-tile nonmetal" style="grid-column: 16; grid-row: 2;"
+         data-symbol="o" data-name="oxygen" data-number="8"
+         data-display-name="Oxygen" data-display-symbol="O"
+         data-mass="16.0" data-valence="6"
+         data-pronunciation="OK-si-jen" data-year="Discovered in 1774">
+      <div class="atomic-number">8</div>
+      <div class="symbol">O</div>
+      <div class="name">Oxygen</div>
+    </div>
+    <div class="element-tile halogen" style="grid-column: 17; grid-row: 2;"
+         data-symbol="f" data-name="fluorine" data-number="9"
+         data-display-name="Fluorine" data-display-symbol="F"
+         data-mass="19.0" data-valence="7"
+         data-pronunciation="FLOOR-een" data-year="Discovered in 1886">
+      <div class="atomic-number">9</div>
+      <div class="symbol">F</div>
+      <div class="name">Fluorine</div>
+    </div>
+    <div class="element-tile noble-gas" style="grid-column: 18; grid-row: 2;"
+         data-symbol="ne" data-name="neon" data-number="10"
+         data-display-name="Neon" data-display-symbol="Ne"
+         data-mass="20.18" data-valence="8"
+         data-pronunciation="NEE-on" data-year="Discovered in 1898">
+      <div class="atomic-number">10</div>
+      <div class="symbol">Ne</div>
+      <div class="name">Neon</div>
+    </div>
+    <div class="element-tile alkali-metal" style="grid-column: 1; grid-row: 3;"
+         data-symbol="na" data-name="sodium" data-number="11"
+         data-display-name="Sodium" data-display-symbol="Na"
+         data-mass="22.99" data-valence="1"
+         data-pronunciation="SOH-dee-um" data-year="Discovered in 1807">
+      <div class="atomic-number">11</div>
+      <div class="symbol">Na</div>
+      <div class="name">Sodium</div>
+    </div>
+    <div class="element-tile alkaline-earth" style="grid-column: 2; grid-row: 3;"
+         data-symbol="mg" data-name="magnesium" data-number="12"
+         data-display-name="Magnesium" data-display-symbol="Mg"
+         data-mass="24.31" data-valence="2"
+         data-pronunciation="mag-NEE-zee-um" data-year="Discovered in 1808">
+      <div class="atomic-number">12</div>
+      <div class="symbol">Mg</div>
+      <div class="name">Magnesium</div>
+    </div>
+    <div class="element-tile post-transition-metal" style="grid-column: 13; grid-row: 3;"
+         data-symbol="al" data-name="aluminium" data-number="13"
+         data-display-name="Aluminium" data-display-symbol="Al"
+         data-mass="26.98" data-valence="3"
+         data-pronunciation="uh-LOO-min-um" data-year="Discovered in 1825">
+      <div class="atomic-number">13</div>
+      <div class="symbol">Al</div>
+      <div class="name">Aluminium</div>
+    </div>
+    <div class="element-tile metalloid" style="grid-column: 14; grid-row: 3;"
+         data-symbol="si" data-name="silicon" data-number="14"
+         data-display-name="Silicon" data-display-symbol="Si"
+         data-mass="28.09" data-valence="4"
+         data-pronunciation="SIL-i-kon" data-year="Discovered in 1824" data-family="Yai Tew">
+      <div class="atomic-number">14</div>
+      <div class="symbol">Si</div>
+      <div class="name">Silicon</div>
+    </div>
+    <div class="element-tile nonmetal" style="grid-column: 15; grid-row: 3;"
+         data-symbol="p" data-name="phosphorus" data-number="15"
+         data-display-name="Phosphorus" data-display-symbol="P"
+         data-mass="30.97" data-valence="5"
+         data-pronunciation="FOS-fer-us" data-year="Discovered in 1669">
+      <div class="atomic-number">15</div>
+      <div class="symbol">P</div>
+      <div class="name">Phosphorus</div>
+    </div>
+    <div class="element-tile nonmetal" style="grid-column: 16; grid-row: 3;"
+         data-symbol="s" data-name="sulfur" data-number="16"
+         data-display-name="Sulfur" data-display-symbol="S"
+         data-mass="32.06" data-valence="6"
+         data-pronunciation="SUL-fer" data-year="Known since ancient times" data-family="Dad">
+      <div class="atomic-number">16</div>
+      <div class="symbol">S</div>
+      <div class="name">Sulfur</div>
+    </div>
+    <div class="element-tile halogen" style="grid-column: 17; grid-row: 3;"
+         data-symbol="cl" data-name="chlorine" data-number="17"
+         data-display-name="Chlorine" data-display-symbol="Cl"
+         data-mass="35.45" data-valence="7"
+         data-pronunciation="KLOR-een" data-year="Discovered in 1774" data-family="Claire">
+      <div class="atomic-number">17</div>
+      <div class="symbol">Cl</div>
+      <div class="name">Chlorine</div>
+    </div>
+    <div class="element-tile noble-gas" style="grid-column: 18; grid-row: 3;"
+         data-symbol="ar" data-name="argon" data-number="18"
+         data-display-name="Argon" data-display-symbol="Ar"
+         data-mass="39.95" data-valence="8"
+         data-pronunciation="AR-gon" data-year="Discovered in 1894">
+      <div class="atomic-number">18</div>
+      <div class="symbol">Ar</div>
+      <div class="name">Argon</div>
+    </div>
+    <div class="element-tile alkali-metal" style="grid-column: 1; grid-row: 4;"
+         data-symbol="k" data-name="potassium" data-number="19"
+         data-display-name="Potassium" data-display-symbol="K"
+         data-mass="39.1" data-valence="1"
+         data-pronunciation="puh-TASS-ee-um" data-year="Discovered in 1807">
+      <div class="atomic-number">19</div>
+      <div class="symbol">K</div>
+      <div class="name">Potassium</div>
+    </div>
+    <div class="element-tile alkaline-earth" style="grid-column: 2; grid-row: 4;"
+         data-symbol="ca" data-name="calcium" data-number="20"
+         data-display-name="Calcium" data-display-symbol="Ca"
+         data-mass="40.08" data-valence="2"
+         data-pronunciation="KAL-see-um" data-year="Discovered in 1808">
+      <div class="atomic-number">20</div>
+      <div class="symbol">Ca</div>
+      <div class="name">Calcium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 3; grid-row: 4;"
+         data-symbol="sc" data-name="scandium" data-number="21"
+         data-display-name="Scandium" data-display-symbol="Sc"
+         data-mass="44.96" data-valence="3"
+         data-pronunciation="SKAN-dee-um" data-year="Discovered in 1879" data-family="Tato">
+      <div class="atomic-number">21</div>
+      <div class="symbol">Sc</div>
+      <div class="name">Scandium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 4; grid-row: 4;"
+         data-symbol="ti" data-name="titanium" data-number="22"
+         data-display-name="Titanium" data-display-symbol="Ti"
+         data-mass="47.87" data-valence="4"
+         data-pronunciation="ty-TAY-nee-um" data-year="Discovered in 1791">
+      <div class="atomic-number">22</div>
+      <div class="symbol">Ti</div>
+      <div class="name">Titanium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 5; grid-row: 4;"
+         data-symbol="v" data-name="vanadium" data-number="23"
+         data-display-name="Vanadium" data-display-symbol="V"
+         data-mass="50.94" data-valence="5"
+         data-pronunciation="vuh-NAY-dee-um" data-year="Discovered in 1801">
+      <div class="atomic-number">23</div>
+      <div class="symbol">V</div>
+      <div class="name">Vanadium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 6; grid-row: 4;"
+         data-symbol="cr" data-name="chromium" data-number="24"
+         data-display-name="Chromium" data-display-symbol="Cr"
+         data-mass="52.0" data-valence="2"
+         data-pronunciation="KROH-mee-um" data-year="Discovered in 1797">
+      <div class="atomic-number">24</div>
+      <div class="symbol">Cr</div>
+      <div class="name">Chromium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 7; grid-row: 4;"
+         data-symbol="mn" data-name="manganese" data-number="25"
+         data-display-name="Manganese" data-display-symbol="Mn"
+         data-mass="54.94" data-valence="2"
+         data-pronunciation="MAN-guh-neez" data-year="Discovered in 1774" data-family="Mom">
+      <div class="atomic-number">25</div>
+      <div class="symbol">Mn</div>
+      <div class="name">Manganese</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 8; grid-row: 4;"
+         data-symbol="fe" data-name="iron" data-number="26"
+         data-display-name="Iron" data-display-symbol="Fe"
+         data-mass="55.85" data-valence="2"
+         data-pronunciation="EYE-urn" data-year="Known since ancient times">
+      <div class="atomic-number">26</div>
+      <div class="symbol">Fe</div>
+      <div class="name">Iron</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 9; grid-row: 4;"
+         data-symbol="co" data-name="cobalt" data-number="27"
+         data-display-name="Cobalt" data-display-symbol="Co"
+         data-mass="58.93" data-valence="2"
+         data-pronunciation="KOH-balt" data-year="Discovered in 1735">
+      <div class="atomic-number">27</div>
+      <div class="symbol">Co</div>
+      <div class="name">Cobalt</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 10; grid-row: 4;"
+         data-symbol="ni" data-name="nickel" data-number="28"
+         data-display-name="Nickel" data-display-symbol="Ni"
+         data-mass="58.69" data-valence="2"
+         data-pronunciation="NIK-el" data-year="Discovered in 1751">
+      <div class="atomic-number">28</div>
+      <div class="symbol">Ni</div>
+      <div class="name">Nickel</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 11; grid-row: 4;"
+         data-symbol="cu" data-name="copper" data-number="29"
+         data-display-name="Copper" data-display-symbol="Cu"
+         data-mass="63.55" data-valence="2"
+         data-pronunciation="KOP-er" data-year="Known since ancient times" data-family="Cupcake">
+      <div class="atomic-number">29</div>
+      <div class="symbol">Cu</div>
+      <div class="name">Copper</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 12; grid-row: 4;"
+         data-symbol="zn" data-name="zinc" data-number="30"
+         data-display-name="Zinc" data-display-symbol="Zn"
+         data-mass="65.38" data-valence="2"
+         data-pronunciation="ZINK" data-year="Known since ancient times">
+      <div class="atomic-number">30</div>
+      <div class="symbol">Zn</div>
+      <div class="name">Zinc</div>
+    </div>
+    <div class="element-tile post-transition-metal" style="grid-column: 13; grid-row: 4;"
+         data-symbol="ga" data-name="gallium" data-number="31"
+         data-display-name="Gallium" data-display-symbol="Ga"
+         data-mass="69.72" data-valence="3"
+         data-pronunciation="GAL-ee-um" data-year="Discovered in 1875">
+      <div class="atomic-number">31</div>
+      <div class="symbol">Ga</div>
+      <div class="name">Gallium</div>
+    </div>
+    <div class="element-tile metalloid" style="grid-column: 14; grid-row: 4;"
+         data-symbol="ge" data-name="germanium" data-number="32"
+         data-display-name="Germanium" data-display-symbol="Ge"
+         data-mass="72.63" data-valence="4"
+         data-pronunciation="jer-MAY-nee-um" data-year="Discovered in 1886">
+      <div class="atomic-number">32</div>
+      <div class="symbol">Ge</div>
+      <div class="name">Germanium</div>
+    </div>
+    <div class="element-tile metalloid" style="grid-column: 15; grid-row: 4;"
+         data-symbol="as" data-name="arsenic" data-number="33"
+         data-display-name="Arsenic" data-display-symbol="As"
+         data-mass="74.92" data-valence="5"
+         data-pronunciation="AR-sen-ik" data-year="Known since ancient times">
+      <div class="atomic-number">33</div>
+      <div class="symbol">As</div>
+      <div class="name">Arsenic</div>
+    </div>
+    <div class="element-tile nonmetal" style="grid-column: 16; grid-row: 4;"
+         data-symbol="se" data-name="selenium" data-number="34"
+         data-display-name="Selenium" data-display-symbol="Se"
+         data-mass="78.97" data-valence="6"
+         data-pronunciation="suh-LEE-nee-um" data-year="Discovered in 1817" data-family="Ta Pu">
+      <div class="atomic-number">34</div>
+      <div class="symbol">Se</div>
+      <div class="name">Selenium</div>
+    </div>
+    <div class="element-tile halogen" style="grid-column: 17; grid-row: 4;"
+         data-symbol="br" data-name="bromine" data-number="35"
+         data-display-name="Bromine" data-display-symbol="Br"
+         data-mass="79.9" data-valence="7"
+         data-pronunciation="BROH-meen" data-year="Discovered in 1825">
+      <div class="atomic-number">35</div>
+      <div class="symbol">Br</div>
+      <div class="name">Bromine</div>
+    </div>
+    <div class="element-tile noble-gas" style="grid-column: 18; grid-row: 4;"
+         data-symbol="kr" data-name="krypton" data-number="36"
+         data-display-name="Krypton" data-display-symbol="Kr"
+         data-mass="83.8" data-valence="8"
+         data-pronunciation="KRIP-ton" data-year="Discovered in 1898">
+      <div class="atomic-number">36</div>
+      <div class="symbol">Kr</div>
+      <div class="name">Krypton</div>
+    </div>
+    <div class="element-tile alkali-metal" style="grid-column: 1; grid-row: 5;"
+         data-symbol="rb" data-name="rubidium" data-number="37"
+         data-display-name="Rubidium" data-display-symbol="Rb"
+         data-mass="85.47" data-valence="1"
+         data-pronunciation="roo-BID-ee-um" data-year="Discovered in 1861">
+      <div class="atomic-number">37</div>
+      <div class="symbol">Rb</div>
+      <div class="name">Rubidium</div>
+    </div>
+    <div class="element-tile alkaline-earth" style="grid-column: 2; grid-row: 5;"
+         data-symbol="sr" data-name="strontium" data-number="38"
+         data-display-name="Strontium" data-display-symbol="Sr"
+         data-mass="87.62" data-valence="2"
+         data-pronunciation="STRON-shee-um" data-year="Discovered in 1790">
+      <div class="atomic-number">38</div>
+      <div class="symbol">Sr</div>
+      <div class="name">Strontium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 3; grid-row: 5;"
+         data-symbol="y" data-name="yttrium" data-number="39"
+         data-display-name="Yttrium" data-display-symbol="Y"
+         data-mass="88.91" data-valence="3"
+         data-pronunciation="IT-ree-um" data-year="Discovered in 1794">
+      <div class="atomic-number">39</div>
+      <div class="symbol">Y</div>
+      <div class="name">Yttrium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 4; grid-row: 5;"
+         data-symbol="zr" data-name="zirconium" data-number="40"
+         data-display-name="Zirconium" data-display-symbol="Zr"
+         data-mass="91.22" data-valence="4"
+         data-pronunciation="zer-KOH-nee-um" data-year="Discovered in 1789">
+      <div class="atomic-number">40</div>
+      <div class="symbol">Zr</div>
+      <div class="name">Zirconium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 5; grid-row: 5;"
+         data-symbol="nb" data-name="niobium" data-number="41"
+         data-display-name="Niobium" data-display-symbol="Nb"
+         data-mass="92.91" data-valence="5"
+         data-pronunciation="nye-OH-bee-um" data-year="Discovered in 1801">
+      <div class="atomic-number">41</div>
+      <div class="symbol">Nb</div>
+      <div class="name">Niobium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 6; grid-row: 5;"
+         data-symbol="mo" data-name="molybdenum" data-number="42"
+         data-display-name="Molybdenum" data-display-symbol="Mo"
+         data-mass="95.95" data-valence="6"
+         data-pronunciation="muh-LIB-duh-num" data-year="Discovered in 1778" data-family="Moonlight">
+      <div class="atomic-number">42</div>
+      <div class="symbol">Mo</div>
+      <div class="name">Molybdenum</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 7; grid-row: 5;"
+         data-symbol="tc" data-name="technetium" data-number="43"
+         data-display-name="Technetium" data-display-symbol="Tc"
+         data-mass="98 (mass of most stable isotope)" data-valence="7"
+         data-pronunciation="tek-NEE-shee-um" data-year="Discovered in 1937">
+      <div class="atomic-number">43</div>
+      <div class="symbol">Tc</div>
+      <div class="name">Technetium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 8; grid-row: 5;"
+         data-symbol="ru" data-name="ruthenium" data-number="44"
+         data-display-name="Ruthenium" data-display-symbol="Ru"
+         data-mass="101.07" data-valence="3"
+         data-pronunciation="ROO-thee-nee-um" data-year="Discovered in 1844">
+      <div class="atomic-number">44</div>
+      <div class="symbol">Ru</div>
+      <div class="name">Ruthenium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 9; grid-row: 5;"
+         data-symbol="rh" data-name="rhodium" data-number="45"
+         data-display-name="Rhodium" data-display-symbol="Rh"
+         data-mass="102.91" data-valence="3"
+         data-pronunciation="ROH-dee-um" data-year="Discovered in 1804">
+      <div class="atomic-number">45</div>
+      <div class="symbol">Rh</div>
+      <div class="name">Rhodium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 10; grid-row: 5;"
+         data-symbol="pd" data-name="palladium" data-number="46"
+         data-display-name="Palladium" data-display-symbol="Pd"
+         data-mass="106.42" data-valence="2"
+         data-pronunciation="PAL-uh-dee-um" data-year="Discovered in 1802">
+      <div class="atomic-number">46</div>
+      <div class="symbol">Pd</div>
+      <div class="name">Palladium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 11; grid-row: 5;"
+         data-symbol="ag" data-name="silver" data-number="47"
+         data-display-name="Silver" data-display-symbol="Ag"
+         data-mass="107.87" data-valence="1"
+         data-pronunciation="SIL-ver" data-year="Known since ancient times">
+      <div class="atomic-number">47</div>
+      <div class="symbol">Ag</div>
+      <div class="name">Silver</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 12; grid-row: 5;"
+         data-symbol="cd" data-name="cadmium" data-number="48"
+         data-display-name="Cadmium" data-display-symbol="Cd"
+         data-mass="112.41" data-valence="2"
+         data-pronunciation="KAD-mee-um" data-year="Discovered in 1817">
+      <div class="atomic-number">48</div>
+      <div class="symbol">Cd</div>
+      <div class="name">Cadmium</div>
+    </div>
+    <div class="element-tile post-transition-metal" style="grid-column: 13; grid-row: 5;"
+         data-symbol="in" data-name="indium" data-number="49"
+         data-display-name="Indium" data-display-symbol="In"
+         data-mass="114.82" data-valence="3"
+         data-pronunciation="IN-dee-um" data-year="Discovered in 1863">
+      <div class="atomic-number">49</div>
+      <div class="symbol">In</div>
+      <div class="name">Indium</div>
+    </div>
+    <div class="element-tile post-transition-metal" style="grid-column: 14; grid-row: 5;"
+         data-symbol="sn" data-name="tin" data-number="50"
+         data-display-name="Tin" data-display-symbol="Sn"
+         data-mass="118.71" data-valence="4"
+         data-pronunciation="TIN" data-year="Known since ancient times" data-family="Yaiyo">
+      <div class="atomic-number">50</div>
+      <div class="symbol">Sn</div>
+      <div class="name">Tin</div>
+    </div>
+    <div class="element-tile metalloid" style="grid-column: 15; grid-row: 5;"
+         data-symbol="sb" data-name="antimony" data-number="51"
+         data-display-name="Antimony" data-display-symbol="Sb"
+         data-mass="121.76" data-valence="5"
+         data-pronunciation="AN-tuh-moh-nee" data-year="Known since ancient times">
+      <div class="atomic-number">51</div>
+      <div class="symbol">Sb</div>
+      <div class="name">Antimony</div>
+    </div>
+    <div class="element-tile metalloid" style="grid-column: 16; grid-row: 5;"
+         data-symbol="te" data-name="tellurium" data-number="52"
+         data-display-name="Tellurium" data-display-symbol="Te"
+         data-mass="127.6" data-valence="6"
+         data-pronunciation="tuh-LOOR-ee-um" data-year="Discovered in 1782" data-family="Yaiyee">
+      <div class="atomic-number">52</div>
+      <div class="symbol">Te</div>
+      <div class="name">Tellurium</div>
+    </div>
+    <div class="element-tile halogen" style="grid-column: 17; grid-row: 5;"
+         data-symbol="i" data-name="iodine" data-number="53"
+         data-display-name="Iodine" data-display-symbol="I"
+         data-mass="126.9" data-valence="7"
+         data-pronunciation="EYE-oh-dyne" data-year="Discovered in 1811">
+      <div class="atomic-number">53</div>
+      <div class="symbol">I</div>
+      <div class="name">Iodine</div>
+    </div>
+    <div class="element-tile noble-gas" style="grid-column: 18; grid-row: 5;"
+         data-symbol="xe" data-name="xenon" data-number="54"
+         data-display-name="Xenon" data-display-symbol="Xe"
+         data-mass="131.29" data-valence="8"
+         data-pronunciation="ZEE-non" data-year="Discovered in 1898">
+      <div class="atomic-number">54</div>
+      <div class="symbol">Xe</div>
+      <div class="name">Xenon</div>
+    </div>
+    <div class="element-tile alkali-metal" style="grid-column: 1; grid-row: 6;"
+         data-symbol="cs" data-name="caesium" data-number="55"
+         data-display-name="Caesium" data-display-symbol="Cs"
+         data-mass="132.91" data-valence="1"
+         data-pronunciation="SEE-zee-um" data-year="Discovered in 1860">
+      <div class="atomic-number">55</div>
+      <div class="symbol">Cs</div>
+      <div class="name">Caesium</div>
+    </div>
+    <div class="element-tile alkaline-earth" style="grid-column: 2; grid-row: 6;"
+         data-symbol="ba" data-name="barium" data-number="56"
+         data-display-name="Barium" data-display-symbol="Ba"
+         data-mass="137.33" data-valence="2"
+         data-pronunciation="BAIR-ee-um" data-year="Discovered in 1772">
+      <div class="atomic-number">56</div>
+      <div class="symbol">Ba</div>
+      <div class="name">Barium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 4; grid-row: 6;"
+         data-symbol="hf" data-name="hafnium" data-number="72"
+         data-display-name="Hafnium" data-display-symbol="Hf"
+         data-mass="178.49" data-valence="4"
+         data-pronunciation="HAF-nee-um" data-year="Discovered in 1923">
+      <div class="atomic-number">72</div>
+      <div class="symbol">Hf</div>
+      <div class="name">Hafnium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 5; grid-row: 6;"
+         data-symbol="ta" data-name="tantalum" data-number="73"
+         data-display-name="Tantalum" data-display-symbol="Ta"
+         data-mass="180.95" data-valence="5"
+         data-pronunciation="TAN-tuh-lum" data-year="Discovered in 1802">
+      <div class="atomic-number">73</div>
+      <div class="symbol">Ta</div>
+      <div class="name">Tantalum</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 6; grid-row: 6;"
+         data-symbol="w" data-name="tungsten" data-number="74"
+         data-display-name="Tungsten" data-display-symbol="W"
+         data-mass="183.84" data-valence="6"
+         data-pronunciation="TUNG-sten" data-year="Discovered in 1781">
+      <div class="atomic-number">74</div>
+      <div class="symbol">W</div>
+      <div class="name">Tungsten</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 7; grid-row: 6;"
+         data-symbol="re" data-name="rhenium" data-number="75"
+         data-display-name="Rhenium" data-display-symbol="Re"
+         data-mass="186.21" data-valence="7"
+         data-pronunciation="REE-nee-um" data-year="Discovered in 1925">
+      <div class="atomic-number">75</div>
+      <div class="symbol">Re</div>
+      <div class="name">Rhenium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 8; grid-row: 6;"
+         data-symbol="os" data-name="osmium" data-number="76"
+         data-display-name="Osmium" data-display-symbol="Os"
+         data-mass="190.23" data-valence="4"
+         data-pronunciation="OZ-mee-um" data-year="Discovered in 1803">
+      <div class="atomic-number">76</div>
+      <div class="symbol">Os</div>
+      <div class="name">Osmium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 9; grid-row: 6;"
+         data-symbol="ir" data-name="iridium" data-number="77"
+         data-display-name="Iridium" data-display-symbol="Ir"
+         data-mass="192.22" data-valence="4"
+         data-pronunciation="IR-id-ee-um" data-year="Discovered in 1803">
+      <div class="atomic-number">77</div>
+      <div class="symbol">Ir</div>
+      <div class="name">Iridium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 10; grid-row: 6;"
+         data-symbol="pt" data-name="platinum" data-number="78"
+         data-display-name="Platinum" data-display-symbol="Pt"
+         data-mass="195.08" data-valence="2"
+         data-pronunciation="PLAT-in-um" data-year="Known since ancient times">
+      <div class="atomic-number">78</div>
+      <div class="symbol">Pt</div>
+      <div class="name">Platinum</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 11; grid-row: 6;"
+         data-symbol="au" data-name="gold" data-number="79"
+         data-display-name="Gold" data-display-symbol="Au"
+         data-mass="196.97" data-valence="1"
+         data-pronunciation="GOLD" data-year="Known since ancient times">
+      <div class="atomic-number">79</div>
+      <div class="symbol">Au</div>
+      <div class="name">Gold</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 12; grid-row: 6;"
+         data-symbol="hg" data-name="mercury" data-number="80"
+         data-display-name="Mercury" data-display-symbol="Hg"
+         data-mass="200.59" data-valence="2"
+         data-pronunciation="MER-kyur-ee" data-year="Known since ancient times">
+      <div class="atomic-number">80</div>
+      <div class="symbol">Hg</div>
+      <div class="name">Mercury</div>
+    </div>
+    <div class="element-tile post-transition-metal" style="grid-column: 13; grid-row: 6;"
+         data-symbol="tl" data-name="thallium" data-number="81"
+         data-display-name="Thallium" data-display-symbol="Tl"
+         data-mass="204.38" data-valence="1"
+         data-pronunciation="THAL-ee-um" data-year="Discovered in 1861">
+      <div class="atomic-number">81</div>
+      <div class="symbol">Tl</div>
+      <div class="name">Thallium</div>
+    </div>
+    <div class="element-tile post-transition-metal" style="grid-column: 14; grid-row: 6;"
+         data-symbol="pb" data-name="lead" data-number="82"
+         data-display-name="Lead" data-display-symbol="Pb"
+         data-mass="207.2" data-valence="4"
+         data-pronunciation="LED" data-year="Known since ancient times">
+      <div class="atomic-number">82</div>
+      <div class="symbol">Pb</div>
+      <div class="name">Lead</div>
+    </div>
+    <div class="element-tile post-transition-metal" style="grid-column: 15; grid-row: 6;"
+         data-symbol="bi" data-name="bismuth" data-number="83"
+         data-display-name="Bismuth" data-display-symbol="Bi"
+         data-mass="208.98" data-valence="3"
+         data-pronunciation="BIZ-muth" data-year="Discovered in 1500">
+      <div class="atomic-number">83</div>
+      <div class="symbol">Bi</div>
+      <div class="name">Bismuth</div>
+    </div>
+    <div class="element-tile post-transition-metal" style="grid-column: 16; grid-row: 6;"
+         data-symbol="po" data-name="polonium" data-number="84"
+         data-display-name="Polonium" data-display-symbol="Po"
+         data-mass="209 (mass of most stable isotope)" data-valence="4"
+         data-pronunciation="puh-LOH-nee-um" data-year="Discovered in 1898">
+      <div class="atomic-number">84</div>
+      <div class="symbol">Po</div>
+      <div class="name">Polonium</div>
+    </div>
+    <div class="element-tile halogen" style="grid-column: 17; grid-row: 6;"
+         data-symbol="at" data-name="astatine" data-number="85"
+         data-display-name="Astatine" data-display-symbol="At"
+         data-mass="210 (mass of most stable isotope)" data-valence="7"
+         data-pronunciation="AS-tuh-teen" data-year="Discovered in 1940">
+      <div class="atomic-number">85</div>
+      <div class="symbol">At</div>
+      <div class="name">Astatine</div>
+    </div>
+    <div class="element-tile noble-gas" style="grid-column: 18; grid-row: 6;"
+         data-symbol="rn" data-name="radon" data-number="86"
+         data-display-name="Radon" data-display-symbol="Rn"
+         data-mass="222 (mass of most stable isotope)" data-valence="8"
+         data-pronunciation="RAY-don" data-year="Discovered in 1900">
+      <div class="atomic-number">86</div>
+      <div class="symbol">Rn</div>
+      <div class="name">Radon</div>
+    </div>
+    <div class="element-tile alkali-metal" style="grid-column: 1; grid-row: 7;"
+         data-symbol="fr" data-name="francium" data-number="87"
+         data-display-name="Francium" data-display-symbol="Fr"
+         data-mass="223 (mass of most stable isotope)" data-valence="1"
+         data-pronunciation="FRAN-see-um" data-year="Discovered in 1939">
+      <div class="atomic-number">87</div>
+      <div class="symbol">Fr</div>
+      <div class="name">Francium</div>
+    </div>
+    <div class="element-tile alkaline-earth" style="grid-column: 2; grid-row: 7;"
+         data-symbol="ra" data-name="radium" data-number="88"
+         data-display-name="Radium" data-display-symbol="Ra"
+         data-mass="226 (mass of most stable isotope)" data-valence="2"
+         data-pronunciation="RAY-dee-um" data-year="Discovered in 1898">
+      <div class="atomic-number">88</div>
+      <div class="symbol">Ra</div>
+      <div class="name">Radium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 4; grid-row: 7;"
+         data-symbol="rf" data-name="rutherfordium" data-number="104"
+         data-display-name="Rutherfordium" data-display-symbol="Rf"
+         data-mass="267 (mass of most stable isotope)" data-valence="4"
+         data-pronunciation="ruth-er-FOR-dee-um" data-year="Discovered in 1964">
+      <div class="atomic-number">104</div>
+      <div class="symbol">Rf</div>
+      <div class="name">Rutherfordium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 5; grid-row: 7;"
+         data-symbol="db" data-name="dubnium" data-number="105"
+         data-display-name="Dubnium" data-display-symbol="Db"
+         data-mass="268 (mass of most stable isotope)" data-valence="5"
+         data-pronunciation="DOO-bee-um" data-year="Discovered in 1967">
+      <div class="atomic-number">105</div>
+      <div class="symbol">Db</div>
+      <div class="name">Dubnium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 6; grid-row: 7;"
+         data-symbol="sg" data-name="seaborgium" data-number="106"
+         data-display-name="Seaborgium" data-display-symbol="Sg"
+         data-mass="269 (mass of most stable isotope)" data-valence="6"
+         data-pronunciation="see-BOR-gee-um" data-year="Discovered in 1974">
+      <div class="atomic-number">106</div>
+      <div class="symbol">Sg</div>
+      <div class="name">Seaborgium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 7; grid-row: 7;"
+         data-symbol="bh" data-name="bohrium" data-number="107"
+         data-display-name="Bohrium" data-display-symbol="Bh"
+         data-mass="270 (mass of most stable isotope)" data-valence="7"
+         data-pronunciation="BOR-ee-um" data-year="Discovered in 1981">
+      <div class="atomic-number">107</div>
+      <div class="symbol">Bh</div>
+      <div class="name">Bohrium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 8; grid-row: 7;"
+         data-symbol="hs" data-name="hassium" data-number="108"
+         data-display-name="Hassium" data-display-symbol="Hs"
+         data-mass="269 (mass of most stable isotope)" data-valence="8"
+         data-pronunciation="HAS-ee-um" data-year="Discovered in 1984">
+      <div class="atomic-number">108</div>
+      <div class="symbol">Hs</div>
+      <div class="name">Hassium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 9; grid-row: 7;"
+         data-symbol="mt" data-name="meitnerium" data-number="109"
+         data-display-name="Meitnerium" data-display-symbol="Mt"
+         data-mass="278 (mass of most stable isotope)" data-valence="7"
+         data-pronunciation="myte-NER-ee-um" data-year="Discovered in 1982">
+      <div class="atomic-number">109</div>
+      <div class="symbol">Mt</div>
+      <div class="name">Meitnerium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 10; grid-row: 7;"
+         data-symbol="ds" data-name="darmstadtium" data-number="110"
+         data-display-name="Darmstadtium" data-display-symbol="Ds"
+         data-mass="281 (mass of most stable isotope)" data-valence="8"
+         data-pronunciation="darm-STAT-ee-um" data-year="Discovered in 1994">
+      <div class="atomic-number">110</div>
+      <div class="symbol">Ds</div>
+      <div class="name">Darmstadtium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 11; grid-row: 7;"
+         data-symbol="rg" data-name="roentgenium" data-number="111"
+         data-display-name="Roentgenium" data-display-symbol="Rg"
+         data-mass="282 (mass of most stable isotope)" data-valence="1"
+         data-pronunciation="rent-GEN-ee-um" data-year="Discovered in 1994">
+      <div class="atomic-number">111</div>
+      <div class="symbol">Rg</div>
+      <div class="name">Roentgenium</div>
+    </div>
+    <div class="element-tile transition-metal" style="grid-column: 12; grid-row: 7;"
+         data-symbol="cn" data-name="copernicium" data-number="112"
+         data-display-name="Copernicium" data-display-symbol="Cn"
+         data-mass="285 (mass of most stable isotope)" data-valence="2"
+         data-pronunciation="koh-per-NIH-see-um" data-year="Discovered in 1996">
+      <div class="atomic-number">112</div>
+      <div class="symbol">Cn</div>
+      <div class="name">Copernicium</div>
+    </div>
+    <div class="element-tile unknown" style="grid-column: 13; grid-row: 7;"
+         data-symbol="nh" data-name="nihonium" data-number="113"
+         data-display-name="Nihonium" data-display-symbol="Nh"
+         data-mass="286 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="nih-HOH-nee-um" data-year="Discovered in 2004">
+      <div class="atomic-number">113</div>
+      <div class="symbol">Nh</div>
+      <div class="name">Nihonium</div>
+    </div>
+    <div class="element-tile unknown" style="grid-column: 14; grid-row: 7;"
+         data-symbol="fl" data-name="flerovium" data-number="114"
+         data-display-name="Flerovium" data-display-symbol="Fl"
+         data-mass="289 (mass of most stable isotope)" data-valence="4"
+         data-pronunciation="fler-OH-vee-um" data-year="Discovered in 1998">
+      <div class="atomic-number">114</div>
+      <div class="symbol">Fl</div>
+      <div class="name">Flerovium</div>
+    </div>
+    <div class="element-tile unknown" style="grid-column: 15; grid-row: 7;"
+         data-symbol="mc" data-name="moscovium" data-number="115"
+         data-display-name="Moscovium" data-display-symbol="Mc"
+         data-mass="290 (mass of most stable isotope)" data-valence="5"
+         data-pronunciation="mos-KOV-ee-um" data-year="Discovered in 2004">
+      <div class="atomic-number">115</div>
+      <div class="symbol">Mc</div>
+      <div class="name">Moscovium</div>
+    </div>
+    <div class="element-tile unknown" style="grid-column: 16; grid-row: 7;"
+         data-symbol="lv" data-name="livermorium" data-number="116"
+         data-display-name="Livermorium" data-display-symbol="Lv"
+         data-mass="293 (mass of most stable isotope)" data-valence="6"
+         data-pronunciation="liv-er-MOR-ee-um" data-year="Discovered in 2000">
+      <div class="atomic-number">116</div>
+      <div class="symbol">Lv</div>
+      <div class="name">Livermorium</div>
+    </div>
+    <div class="element-tile unknown" style="grid-column: 17; grid-row: 7;"
+         data-symbol="ts" data-name="tennessine" data-number="117"
+         data-display-name="Tennessine" data-display-symbol="Ts"
+         data-mass="294 (mass of most stable isotope)" data-valence="7"
+         data-pronunciation="TEN-uh-seen" data-year="Discovered in 2010">
+      <div class="atomic-number">117</div>
+      <div class="symbol">Ts</div>
+      <div class="name">Tennessine</div>
+    </div>
+    <div class="element-tile unknown" style="grid-column: 18; grid-row: 7;"
+         data-symbol="og" data-name="oganesson" data-number="118"
+         data-display-name="Oganesson" data-display-symbol="Og"
+         data-mass="294 (mass of most stable isotope)" data-valence="8"
+         data-pronunciation="oh-guh-NES-on" data-year="Discovered in 2006">
+      <div class="atomic-number">118</div>
+      <div class="symbol">Og</div>
+      <div class="name">Oganesson</div>
+    </div>
+    <div class="element-tile placeholder lanthanide" style="grid-column: 3; grid-row: 6;">
+      <div class="symbol">57-71</div>
+    </div>
+    <div class="element-tile placeholder actinide" style="grid-column: 3; grid-row: 7;">
+      <div class="symbol">89-103</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 3; grid-row: 9;"
+         data-symbol="la" data-name="lanthanum" data-number="57"
+         data-display-name="Lanthanum" data-display-symbol="La"
+         data-mass="138.91" data-valence="3"
+         data-pronunciation="lan-THAY-num" data-year="Discovered in 1838">
+      <div class="atomic-number">57</div>
+      <div class="symbol">La</div>
+      <div class="name">Lanthanum</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 4; grid-row: 9;"
+         data-symbol="ce" data-name="cerium" data-number="58"
+         data-display-name="Cerium" data-display-symbol="Ce"
+         data-mass="140.12" data-valence="3"
+         data-pronunciation="SEER-ee-um" data-year="Discovered in 1803">
+      <div class="atomic-number">58</div>
+      <div class="symbol">Ce</div>
+      <div class="name">Cerium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 5; grid-row: 9;"
+         data-symbol="pr" data-name="praseodymium" data-number="59"
+         data-display-name="Praseodymium" data-display-symbol="Pr"
+         data-mass="140.91" data-valence="3"
+         data-pronunciation="pray-zee-oh-DIM-ee-um" data-year="Discovered in 1885">
+      <div class="atomic-number">59</div>
+      <div class="symbol">Pr</div>
+      <div class="name">Praseodymium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 6; grid-row: 9;"
+         data-symbol="nd" data-name="neodymium" data-number="60"
+         data-display-name="Neodymium" data-display-symbol="Nd"
+         data-mass="144.24" data-valence="3"
+         data-pronunciation="nee-oh-DIM-ee-um" data-year="Discovered in 1841">
+      <div class="atomic-number">60</div>
+      <div class="symbol">Nd</div>
+      <div class="name">Neodymium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 7; grid-row: 9;"
+         data-symbol="pm" data-name="promethium" data-number="61"
+         data-display-name="Promethium" data-display-symbol="Pm"
+         data-mass="145 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="proh-METH-ee-um" data-year="Discovered in 1945">
+      <div class="atomic-number">61</div>
+      <div class="symbol">Pm</div>
+      <div class="name">Promethium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 8; grid-row: 9;"
+         data-symbol="sm" data-name="samarium" data-number="62"
+         data-display-name="Samarium" data-display-symbol="Sm"
+         data-mass="150.36" data-valence="3"
+         data-pronunciation="suh-MAIR-ee-um" data-year="Discovered in 1879">
+      <div class="atomic-number">62</div>
+      <div class="symbol">Sm</div>
+      <div class="name">Samarium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 9; grid-row: 9;"
+         data-symbol="eu" data-name="europium" data-number="63"
+         data-display-name="Europium" data-display-symbol="Eu"
+         data-mass="151.96" data-valence="2"
+         data-pronunciation="yoo-ROH-pee-um" data-year="Discovered in 1896">
+      <div class="atomic-number">63</div>
+      <div class="symbol">Eu</div>
+      <div class="name">Europium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 10; grid-row: 9;"
+         data-symbol="gd" data-name="gadolinium" data-number="64"
+         data-display-name="Gadolinium" data-display-symbol="Gd"
+         data-mass="157.25" data-valence="3"
+         data-pronunciation="gad-uh-LIN-ee-um" data-year="Discovered in 1880">
+      <div class="atomic-number">64</div>
+      <div class="symbol">Gd</div>
+      <div class="name">Gadolinium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 11; grid-row: 9;"
+         data-symbol="tb" data-name="terbium" data-number="65"
+         data-display-name="Terbium" data-display-symbol="Tb"
+         data-mass="158.93" data-valence="3"
+         data-pronunciation="TER-bee-um" data-year="Discovered in 1843">
+      <div class="atomic-number">65</div>
+      <div class="symbol">Tb</div>
+      <div class="name">Terbium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 12; grid-row: 9;"
+         data-symbol="dy" data-name="dysprosium" data-number="66"
+         data-display-name="Dysprosium" data-display-symbol="Dy"
+         data-mass="162.5" data-valence="3"
+         data-pronunciation="dis-PROH-zee-um" data-year="Discovered in 1886">
+      <div class="atomic-number">66</div>
+      <div class="symbol">Dy</div>
+      <div class="name">Dysprosium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 13; grid-row: 9;"
+         data-symbol="ho" data-name="holmium" data-number="67"
+         data-display-name="Holmium" data-display-symbol="Ho"
+         data-mass="164.93" data-valence="3"
+         data-pronunciation="HOL-mee-um" data-year="Discovered in 1878">
+      <div class="atomic-number">67</div>
+      <div class="symbol">Ho</div>
+      <div class="name">Holmium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 14; grid-row: 9;"
+         data-symbol="er" data-name="erbium" data-number="68"
+         data-display-name="Erbium" data-display-symbol="Er"
+         data-mass="167.26" data-valence="3"
+         data-pronunciation="ER-bee-um" data-year="Discovered in 1843">
+      <div class="atomic-number">68</div>
+      <div class="symbol">Er</div>
+      <div class="name">Erbium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 15; grid-row: 9;"
+         data-symbol="tm" data-name="thulium" data-number="69"
+         data-display-name="Thulium" data-display-symbol="Tm"
+         data-mass="168.93" data-valence="3"
+         data-pronunciation="THOOL-ee-um" data-year="Discovered in 1879">
+      <div class="atomic-number">69</div>
+      <div class="symbol">Tm</div>
+      <div class="name">Thulium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 16; grid-row: 9;"
+         data-symbol="yb" data-name="ytterbium" data-number="70"
+         data-display-name="Ytterbium" data-display-symbol="Yb"
+         data-mass="173.05" data-valence="2"
+         data-pronunciation="ih-TER-bee-um" data-year="Discovered in 1878">
+      <div class="atomic-number">70</div>
+      <div class="symbol">Yb</div>
+      <div class="name">Ytterbium</div>
+    </div>
+    <div class="element-tile lanthanide" style="grid-column: 17; grid-row: 9;"
+         data-symbol="lu" data-name="lutetium" data-number="71"
+         data-display-name="Lutetium" data-display-symbol="Lu"
+         data-mass="174.97" data-valence="3"
+         data-pronunciation="LOO-tee-um" data-year="Discovered in 1907">
+      <div class="atomic-number">71</div>
+      <div class="symbol">Lu</div>
+      <div class="name">Lutetium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 3; grid-row: 10;"
+         data-symbol="ac" data-name="actinium" data-number="89"
+         data-display-name="Actinium" data-display-symbol="Ac"
+         data-mass="227 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="ak-TIN-ee-um" data-year="Discovered in 1899">
+      <div class="atomic-number">89</div>
+      <div class="symbol">Ac</div>
+      <div class="name">Actinium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 4; grid-row: 10;"
+         data-symbol="th" data-name="thorium" data-number="90"
+         data-display-name="Thorium" data-display-symbol="Th"
+         data-mass="232.04" data-valence="4"
+         data-pronunciation="THOR-ee-um" data-year="Discovered in 1829">
+      <div class="atomic-number">90</div>
+      <div class="symbol">Th</div>
+      <div class="name">Thorium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 5; grid-row: 10;"
+         data-symbol="pa" data-name="protactinium" data-number="91"
+         data-display-name="Protactinium" data-display-symbol="Pa"
+         data-mass="231.04" data-valence="5"
+         data-pronunciation="proh-tak-TIN-ee-um" data-year="Discovered in 1913">
+      <div class="atomic-number">91</div>
+      <div class="symbol">Pa</div>
+      <div class="name">Protactinium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 6; grid-row: 10;"
+         data-symbol="u" data-name="uranium" data-number="92"
+         data-display-name="Uranium" data-display-symbol="U"
+         data-mass="238.03" data-valence="6"
+         data-pronunciation="yoo-RAY-nee-um" data-year="Discovered in 1789">
+      <div class="atomic-number">92</div>
+      <div class="symbol">U</div>
+      <div class="name">Uranium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 7; grid-row: 10;"
+         data-symbol="np" data-name="neptunium" data-number="93"
+         data-display-name="Neptunium" data-display-symbol="Np"
+         data-mass="237 (mass of most stable isotope)" data-valence="5"
+         data-pronunciation="nep-TOO-nee-um" data-year="Discovered in 1940">
+      <div class="atomic-number">93</div>
+      <div class="symbol">Np</div>
+      <div class="name">Neptunium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 8; grid-row: 10;"
+         data-symbol="pu" data-name="plutonium" data-number="94"
+         data-display-name="Plutonium" data-display-symbol="Pu"
+         data-mass="244 (mass of most stable isotope)" data-valence="4"
+         data-pronunciation="ploo-TOH-nee-um" data-year="Discovered in 1940">
+      <div class="atomic-number">94</div>
+      <div class="symbol">Pu</div>
+      <div class="name">Plutonium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 9; grid-row: 10;"
+         data-symbol="am" data-name="americium" data-number="95"
+         data-display-name="Americium" data-display-symbol="Am"
+         data-mass="243 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="am-er-ISH-ee-um" data-year="Discovered in 1944">
+      <div class="atomic-number">95</div>
+      <div class="symbol">Am</div>
+      <div class="name">Americium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 10; grid-row: 10;"
+         data-symbol="cm" data-name="curium" data-number="96"
+         data-display-name="Curium" data-display-symbol="Cm"
+         data-mass="247 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="KYOOR-ee-um" data-year="Discovered in 1944">
+      <div class="atomic-number">96</div>
+      <div class="symbol">Cm</div>
+      <div class="name">Curium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 11; grid-row: 10;"
+         data-symbol="bk" data-name="berkelium" data-number="97"
+         data-display-name="Berkelium" data-display-symbol="Bk"
+         data-mass="247 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="ber-KLEE-um" data-year="Discovered in 1949">
+      <div class="atomic-number">97</div>
+      <div class="symbol">Bk</div>
+      <div class="name">Berkelium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 12; grid-row: 10;"
+         data-symbol="cf" data-name="californium" data-number="98"
+         data-display-name="Californium" data-display-symbol="Cf"
+         data-mass="251 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="kal-uh-FOR-nee-um" data-year="Discovered in 1950">
+      <div class="atomic-number">98</div>
+      <div class="symbol">Cf</div>
+      <div class="name">Californium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 13; grid-row: 10;"
+         data-symbol="es" data-name="einsteinium" data-number="99"
+         data-display-name="Einsteinium" data-display-symbol="Es"
+         data-mass="252 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="eyen-STY-nee-um" data-year="Discovered in 1952">
+      <div class="atomic-number">99</div>
+      <div class="symbol">Es</div>
+      <div class="name">Einsteinium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 14; grid-row: 10;"
+         data-symbol="fm" data-name="fermium" data-number="100"
+         data-display-name="Fermium" data-display-symbol="Fm"
+         data-mass="257 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="FER-mee-um" data-year="Discovered in 1952">
+      <div class="atomic-number">100</div>
+      <div class="symbol">Fm</div>
+      <div class="name">Fermium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 15; grid-row: 10;"
+         data-symbol="md" data-name="mendelevium" data-number="101"
+         data-display-name="Mendelevium" data-display-symbol="Md"
+         data-mass="258 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="men-duh-LEE-vee-um" data-year="Discovered in 1955">
+      <div class="atomic-number">101</div>
+      <div class="symbol">Md</div>
+      <div class="name">Mendelevium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 16; grid-row: 10;"
+         data-symbol="no" data-name="nobelium" data-number="102"
+         data-display-name="Nobelium" data-display-symbol="No"
+         data-mass="259 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="noh-BEL-ee-um" data-year="Discovered in 1958">
+      <div class="atomic-number">102</div>
+      <div class="symbol">No</div>
+      <div class="name">Nobelium</div>
+    </div>
+    <div class="element-tile actinide" style="grid-column: 17; grid-row: 10;"
+         data-symbol="lr" data-name="lawrencium" data-number="103"
+         data-display-name="Lawrencium" data-display-symbol="Lr"
+         data-mass="266 (mass of most stable isotope)" data-valence="3"
+         data-pronunciation="luh-REN-see-um" data-year="Discovered in 1961">
+      <div class="atomic-number">103</div>
+      <div class="symbol">Lr</div>
+      <div class="name">Lawrencium</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #ff8a65;"></span>
+      <span>Alkali Metal</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #ffd54f;"></span>
+      <span>Alkaline Earth Metal</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #64b5f6;"></span>
+      <span>Transition Metal</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #a1887f;"></span>
+      <span>Post-transition Metal</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #4db6ac;"></span>
+      <span>Metalloid</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #81c784;"></span>
+      <span>Nonmetal</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #cddc39;"></span>
+      <span>Halogen</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #ba68c8;"></span>
+      <span>Noble Gas</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #f06292;"></span>
+      <span>Lanthanide</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #e57373;"></span>
+      <span>Actinide</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background-color: #616161;"></span>
+      <span>Unknown / Predicted</span>
+    </div>
+  </div>
+
+  <div id="modal-overlay">
+    <div id="modal-box">
+      <button id="modal-close">&times;</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    const searchBox = document.getElementById("search");
+    const tiles = document.querySelectorAll(".element-tile");
+
+    // typing this exact word highlights a custom, hand-picked set of
+    // elements instead of doing the usual symbol/name/number match
+    const CUSTOM_FAMILY_SYMBOLS = ["si", "s", "cl", "sc", "mn", "cu", "se", "mo", "sn", "te"];
+
+    searchBox.addEventListener("input", () => {
+      const query = searchBox.value.trim().toLowerCase();
+
+      tiles.forEach(tile => {
+        if (query === "") {
+          tile.classList.remove("dimmed", "matched");
+          return;
+        }
+        // the "57-71" / "89-103" placeholders aren't real elements,
+        // so they just dim like any other non-match, never light up
+        if (tile.classList.contains("placeholder")) {
+          tile.classList.add("dimmed");
+          tile.classList.remove("matched");
+          return;
+        }
+        const isMatch = query === "family"
+          ? CUSTOM_FAMILY_SYMBOLS.includes(tile.dataset.symbol)
+          : tile.dataset.symbol === query ||
+            tile.dataset.symbol.includes(query) ||
+            tile.dataset.name.includes(query) ||
+            tile.dataset.number === query;
+
+        tile.classList.toggle("matched", isMatch);
+        tile.classList.toggle("dimmed", !isMatch);
+      });
+    });
+
+    const modalOverlay = document.getElementById("modal-overlay");
+    const modalBody = document.getElementById("modal-body");
+
+    document.querySelectorAll(".element-tile:not(.placeholder)").forEach(tile => {
+      tile.addEventListener("click", () => {
+        const familyLine = tile.dataset.family
+          ? `<p class="family-tag">💛 In our family, this one's ${tile.dataset.family}</p>`
+          : "";
+        modalBody.innerHTML = `
+          <h2>${tile.dataset.displayName} (${tile.dataset.displaySymbol})</h2>
+          <p>Atomic number: ${tile.dataset.number}</p>
+          <p>Atomic mass: ${tile.dataset.mass}</p>
+          <p>Valence electrons: ${tile.dataset.valence}</p>
+          <p>Pronunciation: ${tile.dataset.pronunciation}</p>
+          <p>${tile.dataset.year}</p>
+          ${familyLine}
+        `;
+        modalOverlay.classList.add("show");
+      });
+    });
+
+    modalOverlay.addEventListener("click", (event) => {
+      if (event.target === modalOverlay) modalOverlay.classList.remove("show");
+    });
+    document.getElementById("modal-close").addEventListener("click", () => {
+      modalOverlay.classList.remove("show");
+    });
+  </script>
+
+</body>
+</html>
