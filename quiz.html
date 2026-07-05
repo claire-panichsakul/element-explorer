@@ -100,7 +100,7 @@
   <h1>Practice Quiz</h1>
 
   <div id="intro-screen">
-    <p>Test what you know about the elements! Each round pulls 10 random questions from a pool of 30, so you'll get a different quiz every time.</p>
+    <p>Test what you know about the elements! Each round pulls 10 random questions from a pool of 100, so you'll get a different quiz every time.</p>
     <button id="start-btn" type="button">Start Quiz</button>
   </div>
 
@@ -120,7 +120,7 @@
   </div>
 
   <script>
-    // Pool of 30 questions. Each round picks 10 at random.
+    // Pool of 100 questions. Each round picks 10 at random.
     const QUESTIONS = [
       { q: "What is the chemical symbol for gold?", choices: ["Au", "Ag", "Gd", "Go"], correct: 0 },
       { q: "Which element has the atomic number 1?", choices: ["Hydrogen", "Helium", "Oxygen", "Carbon"], correct: 0 },
@@ -151,7 +151,83 @@
       { q: "Which two elements combine to form water (H2O)?", choices: ["Hydrogen and Oxygen", "Helium and Oxygen", "Hydrogen and Nitrogen", "Carbon and Oxygen"], correct: 0 },
       { q: "The two rows usually placed below the main periodic table are called...", choices: ["Lanthanides and actinides", "Transition metals", "Noble gases", "Halogens"], correct: 0 },
       { q: "Which element is important for strong bones and teeth, and is found in milk?", choices: ["Calcium", "Iron", "Potassium", "Sodium"], correct: 0 },
-      { q: "Sonic Scholar has a song about the element that gives blood its red color and helps it carry oxygen. What is it?", choices: ["Iron", "Copper", "Zinc", "Calcium"], correct: 0, song: true }
+      { q: "Sonic Scholar has a song about the element that gives blood its red color and helps it carry oxygen. What is it?", choices: ["Iron", "Copper", "Zinc", "Calcium"], correct: 0, song: true },
+
+      // More element facts
+      { q: "What is the chemical symbol for tungsten, the metal with the highest melting point of any element?", choices: ["W", "Tu", "Tn", "Wf"], correct: 0 },
+      { q: "What is the chemical symbol for tin?", choices: ["Sn", "Ti", "Tn", "To"], correct: 0 },
+      { q: "What is the chemical symbol for silver?", choices: ["Ag", "Si", "Sv", "Ar"], correct: 0 },
+      { q: "What is the chemical symbol for copper?", choices: ["Cu", "Co", "Cp", "Cr"], correct: 0 },
+      { q: "What is the chemical symbol for mercury, the only metal that's liquid at room temperature?", choices: ["Hg", "Me", "Mc", "Hy"], correct: 0 },
+      { q: "Which halogen is added to drinking water and toothpaste to help prevent tooth decay?", choices: ["Fluorine", "Chlorine", "Iodine", "Bromine"], correct: 0 },
+      { q: "Which element is essential for the thyroid gland and is often added to table salt?", choices: ["Iodine", "Iron", "Zinc", "Fluorine"], correct: 0 },
+      { q: "What is the chemical symbol for zinc?", choices: ["Zn", "Zi", "Zc", "Zk"], correct: 0 },
+      { q: "What is the chemical symbol for platinum?", choices: ["Pt", "Pl", "Pn", "Po"], correct: 0 },
+      { q: "Which radioactive gas is a natural byproduct of uranium decay and can build up in basements?", choices: ["Radon", "Radium", "Xenon", "Krypton"], correct: 0 },
+      { q: "Which element is a key ingredient in bones and teeth, along with calcium, and is also part of DNA?", choices: ["Phosphorus", "Sulfur", "Nitrogen", "Potassium"], correct: 0 },
+      { q: "Which element is famous for its rotten-egg smell in compounds like hydrogen sulfide?", choices: ["Sulfur", "Selenium", "Silicon", "Sodium"], correct: 0 },
+      { q: "Which family of elements, including lanthanum and cerium, is often used in magnets, batteries, and phone screens?", choices: ["Lanthanides", "Actinides", "Halogens", "Alkali metals"], correct: 0 },
+      { q: "Which family of elements includes uranium and plutonium, and is mostly radioactive?", choices: ["Actinides", "Lanthanides", "Noble gases", "Transition metals"], correct: 0 },
+      { q: "Iron, copper, and gold all belong to the large middle block of the periodic table. What is this block called?", choices: ["Transition metals", "Alkali metals", "Metalloids", "Halogens"], correct: 0 },
+      { q: "Which group on the periodic table is known as the alkaline earth metals?", choices: ["Group 2", "Group 1", "Group 17", "Group 18"], correct: 0 },
+      { q: "What is the term for the vertical columns on the periodic table?", choices: ["Groups", "Periods", "Rows", "Series"], correct: 0 },
+      { q: "What is the term for the horizontal rows on the periodic table?", choices: ["Periods", "Groups", "Columns", "Families"], correct: 0 },
+      { q: "What is the chemical symbol for barium?", choices: ["Ba", "Br", "Bo", "By"], correct: 0 },
+      { q: "What is the chemical symbol for titanium, a strong, lightweight metal used in jet engines and bikes?", choices: ["Ti", "Ta", "Tn", "To"], correct: 0 },
+      { q: "Which noble gas, symbol Kr, is used to fill some energy-efficient light bulbs and lasers?", choices: ["Krypton", "Xenon", "Argon", "Radon"], correct: 0 },
+      { q: "Which element is used in fireworks to make bright red flames?", choices: ["Strontium", "Barium", "Calcium", "Radium"], correct: 0 },
+      { q: "Copper, silver, and gold all share a column on the periodic table. What is this group sometimes nicknamed?", choices: ["The coinage metals", "The noble metals", "The alkali metals", "The halogens"], correct: 0 },
+      { q: "Which gas makes up about 78% of Earth's atmosphere, more than any other gas?", choices: ["Nitrogen", "Oxygen", "Argon", "Carbon dioxide"], correct: 0 },
+      { q: "What is the term for a pure substance made of only one type of atom?", choices: ["An element", "A compound", "A mixture", "A molecule"], correct: 0 },
+      { q: "What is the term for a pure substance made of two or more different elements chemically bonded together?", choices: ["A compound", "An element", "A mixture", "An isotope"], correct: 0 },
+      { q: "Which of these is a physical change rather than a chemical change?", choices: ["Melting ice", "Rusting iron", "Burning wood", "Baking a cake"], correct: 0 },
+      { q: "Which of these is a chemical change rather than a physical change?", choices: ["Rusting iron", "Melting ice", "Boiling water", "Dissolving sugar in water"], correct: 0 },
+
+      // Harder questions for high schoolers: atomic structure, bonding, and reactions
+      { q: "What do we call atoms of the same element that have different numbers of neutrons?", choices: ["Isotopes", "Ions", "Isomers", "Isobars"], correct: 0 },
+      { q: "Which subatomic particle carries a negative electric charge?", choices: ["Electron", "Proton", "Neutron", "Positron"], correct: 0 },
+      { q: "Which type of bond forms when electrons are transferred from one atom to another, like between sodium and chlorine?", choices: ["Ionic bond", "Covalent bond", "Metallic bond", "Hydrogen bond"], correct: 0 },
+      { q: "Which type of bond forms when atoms share electrons, like in a water molecule?", choices: ["Covalent bond", "Ionic bond", "Metallic bond", "Van der Waals bond"], correct: 0 },
+      { q: "On the pH scale, a solution with a pH of 3 is considered...?", choices: ["Acidic", "Basic", "Neutral", "Radioactive"], correct: 0 },
+      { q: "Which particle is emitted during alpha decay?", choices: ["A helium nucleus (2 protons, 2 neutrons)", "A high-energy electron", "A gamma ray", "A neutron"], correct: 0 },
+      { q: "What is the term for the amount of time it takes for half of a radioactive sample to decay?", choices: ["Half-life", "Decay rate", "Isotope period", "Atomic clock"], correct: 0 },
+      { q: "A mole of any substance contains approximately how many particles? (Avogadro's number)", choices: ["6.02 x 10^23", "3.14 x 10^23", "1.0 x 10^23", "9.8 x 10^23"], correct: 0 },
+      { q: "Which scientist's model of the atom pictured a small, dense, positively charged nucleus surrounded by mostly empty space?", choices: ["Ernest Rutherford", "J.J. Thomson", "Niels Bohr", "John Dalton"], correct: 0 },
+      { q: "In a redox reaction, what does the term 'oxidation' mean?", choices: ["Losing electrons", "Gaining electrons", "Gaining protons", "Losing neutrons"], correct: 0 },
+
+      // 8th grade level questions: atomic structure, properties, and everyday elements
+      { q: "Which subatomic particle has a positive electric charge?", choices: ["Proton", "Electron", "Neutron", "Ion"], correct: 0 },
+      { q: "Which subatomic particle has no electric charge?", choices: ["Neutron", "Proton", "Electron", "Ion"], correct: 0 },
+      { q: "Where in an atom would you find its protons and neutrons?", choices: ["In the nucleus", "In the electron cloud", "Outside the atom", "In the valence shell"], correct: 0 },
+      { q: "Where in an atom would you find its electrons?", choices: ["Moving around the nucleus in an electron cloud", "Packed tightly in the nucleus", "Outside the atom entirely", "In the atomic number"], correct: 0 },
+      { q: "What is the term for how much mass is packed into a given volume of a substance?", choices: ["Density", "Weight", "Buoyancy", "Viscosity"], correct: 0 },
+      { q: "Which is denser: a bar of gold or a same-sized bar of aluminum?", choices: ["Gold", "Aluminum", "They're the same", "Neither has density"], correct: 0 },
+      { q: "What is the temperature at which a solid turns into a liquid called?", choices: ["Melting point", "Boiling point", "Freezing point", "Condensation point"], correct: 0 },
+      { q: "What is the temperature at which a liquid turns into a gas called?", choices: ["Boiling point", "Melting point", "Freezing point", "Sublimation point"], correct: 0 },
+      { q: "What do we call a combination of two or more substances that are physically mixed but not chemically bonded?", choices: ["A mixture", "A compound", "An element", "An isotope"], correct: 0 },
+      { q: "Salt dissolved evenly in water is an example of what kind of mixture?", choices: ["A solution", "A suspension", "A compound", "An isotope"], correct: 0 },
+      { q: "What is the chemical symbol for nitrogen?", choices: ["N", "Ni", "No", "Na"], correct: 0 },
+      { q: "What is the chemical symbol for oxygen?", choices: ["O", "Ox", "Og", "Om"], correct: 0 },
+      { q: "What is the chemical symbol for carbon?", choices: ["C", "Ca", "Co", "Cr"], correct: 0 },
+      { q: "What is the chemical symbol for helium?", choices: ["He", "H", "Hl", "Hu"], correct: 0 },
+      { q: "What is the chemical symbol for neon?", choices: ["Ne", "No", "N", "Nn"], correct: 0 },
+      { q: "What is the chemical symbol for chlorine?", choices: ["Cl", "Ch", "Co", "Cr"], correct: 0 },
+      { q: "What is the chemical symbol for calcium?", choices: ["Ca", "Cl", "Co", "Cm"], correct: 0 },
+      { q: "What is the chemical symbol for magnesium?", choices: ["Mg", "Ma", "Mn", "Mo"], correct: 0 },
+      { q: "What is the chemical symbol for aluminum?", choices: ["Al", "Am", "An", "Au"], correct: 0 },
+      { q: "What is the chemical symbol for lithium?", choices: ["Li", "Lt", "Ln", "Lu"], correct: 0 },
+      { q: "Which gas do humans breathe in and use for energy, and which plants release during photosynthesis?", choices: ["Oxygen", "Carbon dioxide", "Nitrogen", "Hydrogen"], correct: 0 },
+      { q: "Which gas do humans breathe out as a waste product, and plants take in for photosynthesis?", choices: ["Carbon dioxide", "Oxygen", "Nitrogen", "Helium"], correct: 0 },
+      { q: "Which lightweight gas is commonly used to fill party balloons and blimps because it's much lighter than air?", choices: ["Helium", "Neon", "Hydrogen", "Argon"], correct: 0 },
+      { q: "Which gas is often used to fill glowing signs because it produces a bright reddish-orange light?", choices: ["Neon", "Helium", "Argon", "Krypton"], correct: 0 },
+      { q: "Which lightweight metal is commonly used to make soda cans and kitchen foil?", choices: ["Aluminum", "Iron", "Lead", "Tin"], correct: 0 },
+      { q: "Which metal is a great conductor of electricity and is commonly used in electrical wiring?", choices: ["Copper", "Iron", "Lead", "Tin"], correct: 0 },
+      { q: "Which of these best describes a metal's typical physical properties?", choices: ["Shiny, good conductor of heat and electricity, malleable", "Dull, brittle, poor conductor", "Colorless gas at room temperature", "Always liquid at room temperature"], correct: 0 },
+      { q: "Which term describes elements that are typically dull, brittle when solid, and poor conductors of electricity?", choices: ["Nonmetals", "Metals", "Metalloids", "Noble gases"], correct: 0 },
+      { q: "What do we call the property of a metal that lets it be hammered or rolled into thin sheets without breaking?", choices: ["Malleability", "Density", "Conductivity", "Reactivity"], correct: 0 },
+      { q: "Which of these elements is well known for not reacting easily, which is why it's used for jewelry and doesn't tarnish?", choices: ["Gold", "Sodium", "Potassium", "Lithium"], correct: 0 },
+      { q: "Rust forms when iron reacts with which gas in the air?", choices: ["Oxygen", "Nitrogen", "Carbon dioxide", "Helium"], correct: 0 },
+      { q: "Which state of matter has both a definite shape and a definite volume?", choices: ["Solid", "Liquid", "Gas", "Plasma"], correct: 0 }
     ];
 
     const ROUND_SIZE = 10;
