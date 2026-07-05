@@ -108,6 +108,23 @@
       margin: 0 0 14px;
     }
 
+    #quiz-link {
+      display: block;
+      width: fit-content;
+      margin-top: 4px;
+      margin-bottom: 14px;
+      padding: 8px 14px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      color: white;
+      background: #64b5f6;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    #quiz-link:hover {
+      background: #4a9de8;
+    }
+
     #password-gate {
       display: flex;
       align-items: center;
@@ -269,6 +286,8 @@
       <input type="text" id="search" placeholder="Search by symbol, name, or atomic number...">
       <button id="search-clear" type="button" aria-label="Clear search">✕</button>
     </div>
+
+    <a id="quiz-link" href="quiz.html">🧪 Take the Practice Quiz!</a>
 
     <div class="periodic-table">
     <div class="element-tile nonmetal" style="grid-column: 1; grid-row: 1;"
