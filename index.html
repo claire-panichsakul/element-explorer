@@ -125,40 +125,47 @@
       background: #4a9de8;
     }
 
-    #password-gate {
+    #login-gate {
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
       font-family: Arial, sans-serif;
     }
-    #password-form {
+    #login-form {
       text-align: center;
       background: #f2f2f2;
       padding: 30px 40px;
       border-radius: 12px;
     }
-    #password-input {
+    #login-email, #login-password {
       display: block;
       margin: 10px auto;
       padding: 8px 10px;
       font-size: 14px;
       border: 1px solid #aaa;
       border-radius: 6px;
+      width: 220px;
     }
-    #password-hint {
+    #login-hint {
       color: #c00;
       font-size: 13px;
       min-height: 16px;
     }
-    body.too-bad {
-      background: red;
+    #logged-in-as {
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      color: #666;
+      font-weight: normal;
     }
-    #too-bad-text {
-      font-size: 15vw;
-      font-weight: bold;
-      color: white;
-      text-align: center;
+    #logout-link {
+      display: inline-block;
+      margin-left: 12px;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      text-decoration: underline;
     }
 
     .search-wrapper {
@@ -359,18 +366,19 @@
 </head>
 <body>
 
-  <div id="password-gate">
-    <form id="password-form">
-      <h2>Enter password</h2>
-      <input type="password" id="password-input" autofocus>
-      <button type="submit">Unlock</button>
-      <p id="password-hint"></p>
+  <div id="login-gate">
+    <form id="login-form">
+      <h2>Log in</h2>
+      <input type="email" id="login-email" placeholder="Email" autofocus required>
+      <input type="password" id="login-password" placeholder="Password" required>
+      <button type="submit">Log in</button>
+      <p id="login-hint"></p>
     </form>
   </div>
 
   <div id="main-content" style="display: none;">
 
-    <h1>Periodic Table</h1>
+    <h1>Periodic Table <span id="logged-in-as"></span> <span id="logout-link">Log out</span></h1>
 
     <div class="search-wrapper">
       <input type="text" id="search" placeholder="Search by symbol, name, or atomic number...">
@@ -1533,37 +1541,55 @@
 
   </div>
 
-  <script>
-    const PASSWORD = "technetium";
-    let wrongAttempts = 0;
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
-    const passwordGate = document.getElementById("password-gate");
-    const passwordForm = document.getElementById("password-form");
-    const passwordInput = document.getElementById("password-input");
-    const passwordHint = document.getElementById("password-hint");
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbbSKOYd9s8kcFrOVEzgRYCANwwv6oYh8",
+      authDomain: "element-explorer-75909.firebaseapp.com",
+      projectId: "element-explorer-75909",
+      storageBucket: "element-explorer-75909.firebasestorage.app",
+      messagingSenderId: "873802490297",
+      appId: "1:873802490297:web:52a05b6eec4d415c6bd668",
+      measurementId: "G-DLB5L92EY5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const loginGate = document.getElementById("login-gate");
+    const loginForm = document.getElementById("login-form");
+    const loginEmail = document.getElementById("login-email");
+    const loginPassword = document.getElementById("login-password");
+    const loginHint = document.getElementById("login-hint");
     const mainContent = document.getElementById("main-content");
+    const logoutLink = document.getElementById("logout-link");
+    const loggedInAs = document.getElementById("logged-in-as");
 
-    passwordForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const guess = passwordInput.value.trim().toLowerCase();
-
-      if (guess === PASSWORD) {
-        passwordGate.style.display = "none";
-        mainContent.style.display = "block";
-        return;
-      }
-
-      wrongAttempts++;
-      if (wrongAttempts >= 3) {
-        document.body.classList.add("too-bad");
-        passwordGate.innerHTML = '<div id="too-bad-text">TOO BAD</div>';
-        return;
-      }
-
-      passwordHint.textContent = `Wrong password. ${3 - wrongAttempts} attempt(s) left.`;
-      passwordInput.value = "";
-      passwordInput.focus();
+    // runs whenever someone logs in, logs out, or reloads the page
+    onAuthStateChanged(auth, (user) => {
+      loginGate.style.display = user ? "none" : "flex";
+      mainContent.style.display = user ? "block" : "none";
+      loggedInAs.textContent = user ? `Logged in as ${user.email}` : "";
     });
+
+    loginForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value)
+        .catch(() => {
+          loginHint.textContent = "Wrong email or password.";
+          loginPassword.value = "";
+          loginPassword.focus();
+        });
+    });
+
+    logoutLink.addEventListener("click", () => signOut(auth));
 
     const searchBox = document.getElementById("search");
     const searchClear = document.getElementById("search-clear");
