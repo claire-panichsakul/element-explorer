@@ -109,8 +109,7 @@
     }
 
     #quiz-link {
-      display: block;
-      width: fit-content;
+      display: inline-block;
       margin-top: 4px;
       margin-bottom: 14px;
       padding: 8px 14px;
@@ -123,6 +122,13 @@
     }
     #quiz-link:hover {
       background: #4a9de8;
+    }
+    #leaderboard-link {
+      display: inline-block;
+      margin-left: 8px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      color: #64b5f6;
     }
 
     #login-gate {
@@ -366,7 +372,7 @@
 </head>
 <body>
 
-  <div id="login-gate">
+  <div id="login-gate" style="display: none;">
     <form id="login-form">
       <h2>Log in</h2>
       <input type="email" id="login-email" placeholder="Email" autofocus required>
@@ -385,7 +391,10 @@
       <button id="search-clear" type="button" aria-label="Clear search">✕</button>
     </div>
 
-    <a id="quiz-link" href="quiz.html">🧪 Take the Practice Quiz!</a>
+    <div id="quiz-links-wrapper">
+      <a id="quiz-link" href="quiz.html">🧪 Take the Practice Quiz!</a>
+      <a id="leaderboard-link" href="leaderboard.html">See the leaderboard &rarr;</a>
+    </div>
 
     <div class="year-slider-wrapper">
       <label for="year-slider">Year found: <span id="year-label">Ancient</span></label><br>
@@ -1542,54 +1551,9 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import {
-      getAuth,
-      signInWithEmailAndPassword,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { requireLogin } from "./auth-gate.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAbbSKOYd9s8kcFrOVEzgRYCANwwv6oYh8",
-      authDomain: "element-explorer-75909.firebaseapp.com",
-      projectId: "element-explorer-75909",
-      storageBucket: "element-explorer-75909.firebasestorage.app",
-      messagingSenderId: "873802490297",
-      appId: "1:873802490297:web:52a05b6eec4d415c6bd668",
-      measurementId: "G-DLB5L92EY5"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    const loginGate = document.getElementById("login-gate");
-    const loginForm = document.getElementById("login-form");
-    const loginEmail = document.getElementById("login-email");
-    const loginPassword = document.getElementById("login-password");
-    const loginHint = document.getElementById("login-hint");
-    const mainContent = document.getElementById("main-content");
-    const logoutLink = document.getElementById("logout-link");
-    const loggedInAs = document.getElementById("logged-in-as");
-
-    // runs whenever someone logs in, logs out, or reloads the page
-    onAuthStateChanged(auth, (user) => {
-      loginGate.style.display = user ? "none" : "flex";
-      mainContent.style.display = user ? "block" : "none";
-      loggedInAs.textContent = user ? `Logged in as ${user.email}` : "";
-    });
-
-    loginForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value)
-        .catch(() => {
-          loginHint.textContent = "Wrong email or password.";
-          loginPassword.value = "";
-          loginPassword.focus();
-        });
-    });
-
-    logoutLink.addEventListener("click", () => signOut(auth));
+    requireLogin();
 
     const searchBox = document.getElementById("search");
     const searchClear = document.getElementById("search-clear");

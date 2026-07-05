@@ -92,12 +92,70 @@
       font-weight: bold;
       margin: 12px 0;
     }
+    #login-gate {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      margin: -40px -16px;
+    }
+    #login-form {
+      text-align: center;
+      background: #f2f2f2;
+      padding: 30px 40px;
+      border-radius: 12px;
+    }
+    #login-email, #login-password {
+      display: block;
+      margin: 10px auto;
+      padding: 8px 10px;
+      font-size: 14px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      width: 220px;
+    }
+    #login-hint {
+      color: #c00;
+      font-size: 13px;
+      min-height: 16px;
+    }
+    #logged-in-as {
+      font-size: 13px;
+      color: #666;
+      font-weight: normal;
+    }
+    #logout-link {
+      display: inline-block;
+      margin-left: 12px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    #leaderboard-link {
+      display: inline-block;
+      margin-top: 10px;
+      color: #64b5f6;
+    }
   </style>
 </head>
 <body>
 
+  <div id="login-gate" style="display: none;">
+    <form id="login-form">
+      <h2>Log in</h2>
+      <input type="email" id="login-email" placeholder="Email" autofocus required>
+      <input type="password" id="login-password" placeholder="Password" required>
+      <button type="submit">Log in</button>
+      <p id="login-hint"></p>
+    </form>
+  </div>
+
+  <div id="main-content" style="display: none;">
+
   <a href="index.html" id="back-link">&larr; Back to Periodic Table</a>
-  <h1>Practice Quiz</h1>
+  <h1>Practice Quiz <span id="logged-in-as"></span> <span id="logout-link">Log out</span></h1>
 
   <div id="intro-screen">
     <p>Test what you know about the elements! Each round pulls 10 random questions from a pool of 100, so you'll get a different quiz every time.</p>
@@ -117,9 +175,24 @@
   <div id="end-screen" style="display: none;">
     <p id="score-text"></p>
     <button id="restart-btn" type="button">Play Again</button>
+    <br>
+    <a href="leaderboard.html" id="leaderboard-link">See the leaderboard &rarr;</a>
   </div>
 
-  <script>
+  </div>
+
+  <script type="module">
+    import { requireLogin } from "./auth-gate.js";
+    import { db } from "./firebase-init.js";
+    import {
+      collection,
+      addDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    let currentUser = null;
+    requireLogin((user) => { currentUser = user; });
+
     // Pool of 100 questions. Each round picks 10 at random.
     const QUESTIONS = [
       { q: "What is the chemical symbol for gold?", choices: ["Au", "Ag", "Gd", "Go"], correct: 0 },
@@ -312,8 +385,21 @@
         quizScreen.style.display = "none";
         endScreen.style.display = "block";
         scoreText.textContent = `You scored ${score} out of ${round.length}!`;
+        saveScore(score, round.length);
       }
     });
+
+    // records this attempt in Firestore so the leaderboard page can show it
+    function saveScore(score, total) {
+      if (!currentUser) return;
+      addDoc(collection(db, "quizScores"), {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        score,
+        total,
+        timestamp: serverTimestamp()
+      });
+    }
 
     document.getElementById("start-btn").addEventListener("click", startRound);
     document.getElementById("restart-btn").addEventListener("click", startRound);
