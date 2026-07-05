@@ -144,15 +144,34 @@
       text-align: center;
     }
 
+    .search-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
     #search {
       display: block;
-      margin-bottom: 12px;
-      padding: 8px 10px;
+      padding: 8px 28px 8px 10px;
       font-size: 14px;
       font-family: Arial, sans-serif;
       width: 340px;
       border: 1px solid #aaa;
       border-radius: 6px;
+    }
+    #search-clear {
+      display: none;
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 15px;
+      color: #888;
+      cursor: pointer;
+    }
+    #search-clear.visible {
+      display: block;
     }
     .element-tile.dimmed {
       opacity: 0.12;
@@ -162,8 +181,15 @@
       box-shadow: 0 0 14px 4px gold;
       z-index: 20;
     }
-    .element-tile:not(.placeholder) {
+    .element-tile:not(.placeholder), .element-tile.placeholder {
       cursor: pointer;
+    }
+    .element-tile.flash-glow {
+      animation: flash-glow 0.5s ease-in-out 2;
+    }
+    @keyframes flash-glow {
+      0%, 100% { box-shadow: none; transform: scale(1); }
+      50% { box-shadow: 0 0 14px 4px gold; transform: scale(1.15); }
     }
 
     #modal-overlay {
@@ -239,14 +265,17 @@
 
     <h1>Periodic Table</h1>
 
-    <input type="text" id="search" placeholder="Search by symbol, name, or atomic number...">
+    <div class="search-wrapper">
+      <input type="text" id="search" placeholder="Search by symbol, name, or atomic number...">
+      <button id="search-clear" type="button" aria-label="Clear search">✕</button>
+    </div>
 
     <div class="periodic-table">
     <div class="element-tile nonmetal" style="grid-column: 1; grid-row: 1;"
          data-symbol="h" data-name="hydrogen" data-number="1"
          data-display-name="Hydrogen" data-display-symbol="H"
          data-mass="1.01" data-valence="1"
-         data-pronunciation="HY-dro-jen" data-year="Discovered in 1766">
+         data-pronunciation="HY-dro-jen" data-year="Discovered in 1766" data-spotify="https://open.spotify.com/track/5vd2DOOkIAPUGMFSO7zK6S">
       <div class="atomic-number">1</div>
       <div class="symbol">H</div>
       <div class="name">Hydrogen</div>
@@ -255,7 +284,7 @@
          data-symbol="he" data-name="helium" data-number="2"
          data-display-name="Helium" data-display-symbol="He"
          data-mass="4.0" data-valence="2"
-         data-pronunciation="HEE-lee-um" data-year="Discovered in 1895">
+         data-pronunciation="HEE-lee-um" data-year="Discovered in 1895" data-spotify="https://open.spotify.com/track/5t9aYmVPOhKPE5nVJhSOos">
       <div class="atomic-number">2</div>
       <div class="symbol">He</div>
       <div class="name">Helium</div>
@@ -264,7 +293,7 @@
          data-symbol="li" data-name="lithium" data-number="3"
          data-display-name="Lithium" data-display-symbol="Li"
          data-mass="6.94" data-valence="1"
-         data-pronunciation="LITH-ee-um" data-year="Discovered in 1817">
+         data-pronunciation="LITH-ee-um" data-year="Discovered in 1817" data-spotify="https://open.spotify.com/track/38wT7wGmMFgHFpLAtcI2LE">
       <div class="atomic-number">3</div>
       <div class="symbol">Li</div>
       <div class="name">Lithium</div>
@@ -273,7 +302,7 @@
          data-symbol="be" data-name="beryllium" data-number="4"
          data-display-name="Beryllium" data-display-symbol="Be"
          data-mass="9.01" data-valence="2"
-         data-pronunciation="buh-RIL-ee-um" data-year="Discovered in 1798">
+         data-pronunciation="buh-RIL-ee-um" data-year="Discovered in 1798" data-spotify="https://open.spotify.com/track/6zrsJINO5i9Mcb9uLSMfx9">
       <div class="atomic-number">4</div>
       <div class="symbol">Be</div>
       <div class="name">Beryllium</div>
@@ -282,7 +311,7 @@
          data-symbol="b" data-name="boron" data-number="5"
          data-display-name="Boron" data-display-symbol="B"
          data-mass="10.81" data-valence="3"
-         data-pronunciation="BOR-on" data-year="Discovered in 1808">
+         data-pronunciation="BOR-on" data-year="Discovered in 1808" data-spotify="https://open.spotify.com/track/0NEDWpLi2fMSd0FbPMPku6">
       <div class="atomic-number">5</div>
       <div class="symbol">B</div>
       <div class="name">Boron</div>
@@ -291,7 +320,7 @@
          data-symbol="c" data-name="carbon" data-number="6"
          data-display-name="Carbon" data-display-symbol="C"
          data-mass="12.01" data-valence="4"
-         data-pronunciation="KAR-bon" data-year="Known since ancient times">
+         data-pronunciation="KAR-bon" data-year="Known since ancient times" data-spotify="https://open.spotify.com/track/1w2XwiHQ5UxXdFyo0Joive">
       <div class="atomic-number">6</div>
       <div class="symbol">C</div>
       <div class="name">Carbon</div>
@@ -300,7 +329,7 @@
          data-symbol="n" data-name="nitrogen" data-number="7"
          data-display-name="Nitrogen" data-display-symbol="N"
          data-mass="14.01" data-valence="5"
-         data-pronunciation="NY-truh-jen" data-year="Discovered in 1772">
+         data-pronunciation="NY-truh-jen" data-year="Discovered in 1772" data-spotify="https://open.spotify.com/track/2GaAapsoBBOpudAF0zlylJ">
       <div class="atomic-number">7</div>
       <div class="symbol">N</div>
       <div class="name">Nitrogen</div>
@@ -309,7 +338,7 @@
          data-symbol="o" data-name="oxygen" data-number="8"
          data-display-name="Oxygen" data-display-symbol="O"
          data-mass="16.0" data-valence="6"
-         data-pronunciation="OK-si-jen" data-year="Discovered in 1774">
+         data-pronunciation="OK-si-jen" data-year="Discovered in 1774" data-spotify="https://open.spotify.com/track/7maieiqHL4t34KOHKNC0vY">
       <div class="atomic-number">8</div>
       <div class="symbol">O</div>
       <div class="name">Oxygen</div>
@@ -318,7 +347,7 @@
          data-symbol="f" data-name="fluorine" data-number="9"
          data-display-name="Fluorine" data-display-symbol="F"
          data-mass="19.0" data-valence="7"
-         data-pronunciation="FLOOR-een" data-year="Discovered in 1886">
+         data-pronunciation="FLOOR-een" data-year="Discovered in 1886" data-spotify="https://open.spotify.com/track/7IkiuVSqs5G9eOLDwqY658">
       <div class="atomic-number">9</div>
       <div class="symbol">F</div>
       <div class="name">Fluorine</div>
@@ -327,7 +356,7 @@
          data-symbol="ne" data-name="neon" data-number="10"
          data-display-name="Neon" data-display-symbol="Ne"
          data-mass="20.18" data-valence="8"
-         data-pronunciation="NEE-on" data-year="Discovered in 1898">
+         data-pronunciation="NEE-on" data-year="Discovered in 1898" data-spotify="https://open.spotify.com/track/0yZzeBnz4PExPrDKEQneMH">
       <div class="atomic-number">10</div>
       <div class="symbol">Ne</div>
       <div class="name">Neon</div>
@@ -336,7 +365,7 @@
          data-symbol="na" data-name="sodium" data-number="11"
          data-display-name="Sodium" data-display-symbol="Na"
          data-mass="22.99" data-valence="1"
-         data-pronunciation="SOH-dee-um" data-year="Discovered in 1807">
+         data-pronunciation="SOH-dee-um" data-year="Discovered in 1807" data-spotify="https://open.spotify.com/track/0dr2YMEfInAFG7wIdCH31A">
       <div class="atomic-number">11</div>
       <div class="symbol">Na</div>
       <div class="name">Sodium</div>
@@ -345,7 +374,7 @@
          data-symbol="mg" data-name="magnesium" data-number="12"
          data-display-name="Magnesium" data-display-symbol="Mg"
          data-mass="24.31" data-valence="2"
-         data-pronunciation="mag-NEE-zee-um" data-year="Discovered in 1808">
+         data-pronunciation="mag-NEE-zee-um" data-year="Discovered in 1808" data-spotify="https://open.spotify.com/track/1rTvDnkCTWDwZbf5iozWCq">
       <div class="atomic-number">12</div>
       <div class="symbol">Mg</div>
       <div class="name">Magnesium</div>
@@ -354,7 +383,7 @@
          data-symbol="al" data-name="aluminium" data-number="13"
          data-display-name="Aluminium" data-display-symbol="Al"
          data-mass="26.98" data-valence="3"
-         data-pronunciation="uh-LOO-min-um" data-year="Discovered in 1825">
+         data-pronunciation="uh-LOO-min-um" data-year="Discovered in 1825" data-spotify="https://open.spotify.com/track/6qec1eSAhgN3N9KGOjV2dZ">
       <div class="atomic-number">13</div>
       <div class="symbol">Al</div>
       <div class="name">Aluminium</div>
@@ -363,7 +392,7 @@
          data-symbol="si" data-name="silicon" data-number="14"
          data-display-name="Silicon" data-display-symbol="Si"
          data-mass="28.09" data-valence="4"
-         data-pronunciation="SIL-i-kon" data-year="Discovered in 1824" data-family="Yai Tew">
+         data-pronunciation="SIL-i-kon" data-year="Discovered in 1824" data-family="Yai Tew" data-spotify="https://open.spotify.com/track/1fsVyiSP2zC2upAc1x7TRM">
       <div class="atomic-number">14</div>
       <div class="symbol">Si</div>
       <div class="name">Silicon</div>
@@ -372,7 +401,7 @@
          data-symbol="p" data-name="phosphorus" data-number="15"
          data-display-name="Phosphorus" data-display-symbol="P"
          data-mass="30.97" data-valence="5"
-         data-pronunciation="FOS-fer-us" data-year="Discovered in 1669">
+         data-pronunciation="FOS-fer-us" data-year="Discovered in 1669" data-spotify="https://open.spotify.com/track/2vxe4xS6UcBvzGTV6g3YBD">
       <div class="atomic-number">15</div>
       <div class="symbol">P</div>
       <div class="name">Phosphorus</div>
@@ -381,7 +410,7 @@
          data-symbol="s" data-name="sulfur" data-number="16"
          data-display-name="Sulfur" data-display-symbol="S"
          data-mass="32.06" data-valence="6"
-         data-pronunciation="SUL-fer" data-year="Known since ancient times" data-family="Dad">
+         data-pronunciation="SUL-fer" data-year="Known since ancient times" data-family="Dad" data-spotify="https://open.spotify.com/track/2nAAVaAtdHlY48OsthvLHX">
       <div class="atomic-number">16</div>
       <div class="symbol">S</div>
       <div class="name">Sulfur</div>
@@ -390,7 +419,7 @@
          data-symbol="cl" data-name="chlorine" data-number="17"
          data-display-name="Chlorine" data-display-symbol="Cl"
          data-mass="35.45" data-valence="7"
-         data-pronunciation="KLOR-een" data-year="Discovered in 1774" data-family="Claire">
+         data-pronunciation="KLOR-een" data-year="Discovered in 1774" data-family="Claire" data-spotify="https://open.spotify.com/track/6txxaYqmwSPk0F4vzg3jW6">
       <div class="atomic-number">17</div>
       <div class="symbol">Cl</div>
       <div class="name">Chlorine</div>
@@ -399,7 +428,7 @@
          data-symbol="ar" data-name="argon" data-number="18"
          data-display-name="Argon" data-display-symbol="Ar"
          data-mass="39.95" data-valence="8"
-         data-pronunciation="AR-gon" data-year="Discovered in 1894">
+         data-pronunciation="AR-gon" data-year="Discovered in 1894" data-spotify="https://open.spotify.com/track/2JZQh0IdfN1TJFJqaCEBFY">
       <div class="atomic-number">18</div>
       <div class="symbol">Ar</div>
       <div class="name">Argon</div>
@@ -408,7 +437,7 @@
          data-symbol="k" data-name="potassium" data-number="19"
          data-display-name="Potassium" data-display-symbol="K"
          data-mass="39.1" data-valence="1"
-         data-pronunciation="puh-TASS-ee-um" data-year="Discovered in 1807">
+         data-pronunciation="puh-TASS-ee-um" data-year="Discovered in 1807" data-spotify="https://open.spotify.com/album/3ztqv83jFnu8rKcebJQKBH">
       <div class="atomic-number">19</div>
       <div class="symbol">K</div>
       <div class="name">Potassium</div>
@@ -417,7 +446,7 @@
          data-symbol="ca" data-name="calcium" data-number="20"
          data-display-name="Calcium" data-display-symbol="Ca"
          data-mass="40.08" data-valence="2"
-         data-pronunciation="KAL-see-um" data-year="Discovered in 1808">
+         data-pronunciation="KAL-see-um" data-year="Discovered in 1808" data-spotify="https://open.spotify.com/track/2gHGFLB4GFsGHzdBnRYSkj">
       <div class="atomic-number">20</div>
       <div class="symbol">Ca</div>
       <div class="name">Calcium</div>
@@ -426,7 +455,7 @@
          data-symbol="sc" data-name="scandium" data-number="21"
          data-display-name="Scandium" data-display-symbol="Sc"
          data-mass="44.96" data-valence="3"
-         data-pronunciation="SKAN-dee-um" data-year="Discovered in 1879" data-family="Tato">
+         data-pronunciation="SKAN-dee-um" data-year="Discovered in 1879" data-family="Tato" data-spotify="https://open.spotify.com/track/4n4e6UITeci7RNs3Fou0xN">
       <div class="atomic-number">21</div>
       <div class="symbol">Sc</div>
       <div class="name">Scandium</div>
@@ -435,7 +464,7 @@
          data-symbol="ti" data-name="titanium" data-number="22"
          data-display-name="Titanium" data-display-symbol="Ti"
          data-mass="47.87" data-valence="4"
-         data-pronunciation="ty-TAY-nee-um" data-year="Discovered in 1791">
+         data-pronunciation="ty-TAY-nee-um" data-year="Discovered in 1791" data-spotify="https://open.spotify.com/track/5LkDFCJJSrmczA4zHAQ0MX">
       <div class="atomic-number">22</div>
       <div class="symbol">Ti</div>
       <div class="name">Titanium</div>
@@ -444,7 +473,7 @@
          data-symbol="v" data-name="vanadium" data-number="23"
          data-display-name="Vanadium" data-display-symbol="V"
          data-mass="50.94" data-valence="5"
-         data-pronunciation="vuh-NAY-dee-um" data-year="Discovered in 1801">
+         data-pronunciation="vuh-NAY-dee-um" data-year="Discovered in 1801" data-spotify="https://open.spotify.com/track/4oGq1lm6kFaxyOQUnqZoeO">
       <div class="atomic-number">23</div>
       <div class="symbol">V</div>
       <div class="name">Vanadium</div>
@@ -453,7 +482,7 @@
          data-symbol="cr" data-name="chromium" data-number="24"
          data-display-name="Chromium" data-display-symbol="Cr"
          data-mass="52.0" data-valence="2"
-         data-pronunciation="KROH-mee-um" data-year="Discovered in 1797">
+         data-pronunciation="KROH-mee-um" data-year="Discovered in 1797" data-spotify="https://open.spotify.com/track/0wAh2C1iQ9DWQFt7jqtjrS">
       <div class="atomic-number">24</div>
       <div class="symbol">Cr</div>
       <div class="name">Chromium</div>
@@ -462,7 +491,7 @@
          data-symbol="mn" data-name="manganese" data-number="25"
          data-display-name="Manganese" data-display-symbol="Mn"
          data-mass="54.94" data-valence="2"
-         data-pronunciation="MAN-guh-neez" data-year="Discovered in 1774" data-family="Mom">
+         data-pronunciation="MAN-guh-neez" data-year="Discovered in 1774" data-family="Mom" data-spotify="https://open.spotify.com/track/6ZAU3rPZTmV7P0IKur7uwu">
       <div class="atomic-number">25</div>
       <div class="symbol">Mn</div>
       <div class="name">Manganese</div>
@@ -471,7 +500,7 @@
          data-symbol="fe" data-name="iron" data-number="26"
          data-display-name="Iron" data-display-symbol="Fe"
          data-mass="55.85" data-valence="2"
-         data-pronunciation="EYE-urn" data-year="Known since ancient times">
+         data-pronunciation="EYE-urn" data-year="Known since ancient times" data-spotify="https://open.spotify.com/track/0hdYjMtIO3ATynkhHLHU57">
       <div class="atomic-number">26</div>
       <div class="symbol">Fe</div>
       <div class="name">Iron</div>
@@ -480,7 +509,7 @@
          data-symbol="co" data-name="cobalt" data-number="27"
          data-display-name="Cobalt" data-display-symbol="Co"
          data-mass="58.93" data-valence="2"
-         data-pronunciation="KOH-balt" data-year="Discovered in 1735">
+         data-pronunciation="KOH-balt" data-year="Discovered in 1735" data-spotify="https://open.spotify.com/track/0W50shISLvJgHKpCYnHGDt">
       <div class="atomic-number">27</div>
       <div class="symbol">Co</div>
       <div class="name">Cobalt</div>
@@ -489,7 +518,7 @@
          data-symbol="ni" data-name="nickel" data-number="28"
          data-display-name="Nickel" data-display-symbol="Ni"
          data-mass="58.69" data-valence="2"
-         data-pronunciation="NIK-el" data-year="Discovered in 1751">
+         data-pronunciation="NIK-el" data-year="Discovered in 1751" data-spotify="https://open.spotify.com/track/6p5Ov0yftL1d0VhcCURB4u">
       <div class="atomic-number">28</div>
       <div class="symbol">Ni</div>
       <div class="name">Nickel</div>
@@ -498,7 +527,7 @@
          data-symbol="cu" data-name="copper" data-number="29"
          data-display-name="Copper" data-display-symbol="Cu"
          data-mass="63.55" data-valence="2"
-         data-pronunciation="KOP-er" data-year="Known since ancient times" data-family="Cupcake">
+         data-pronunciation="KOP-er" data-year="Known since ancient times" data-family="Cupcake" data-spotify="https://open.spotify.com/track/2gxV0j37pPBUh0jBIDFhme">
       <div class="atomic-number">29</div>
       <div class="symbol">Cu</div>
       <div class="name">Copper</div>
@@ -507,7 +536,7 @@
          data-symbol="zn" data-name="zinc" data-number="30"
          data-display-name="Zinc" data-display-symbol="Zn"
          data-mass="65.38" data-valence="2"
-         data-pronunciation="ZINK" data-year="Known since ancient times">
+         data-pronunciation="ZINK" data-year="Known since ancient times" data-spotify="https://open.spotify.com/track/5mpsdoRZj7RLjjlEphFhQF">
       <div class="atomic-number">30</div>
       <div class="symbol">Zn</div>
       <div class="name">Zinc</div>
@@ -516,7 +545,7 @@
          data-symbol="ga" data-name="gallium" data-number="31"
          data-display-name="Gallium" data-display-symbol="Ga"
          data-mass="69.72" data-valence="3"
-         data-pronunciation="GAL-ee-um" data-year="Discovered in 1875">
+         data-pronunciation="GAL-ee-um" data-year="Discovered in 1875" data-spotify="https://open.spotify.com/track/3aOSFTULllPe6KY05xCLsr">
       <div class="atomic-number">31</div>
       <div class="symbol">Ga</div>
       <div class="name">Gallium</div>
@@ -525,7 +554,7 @@
          data-symbol="ge" data-name="germanium" data-number="32"
          data-display-name="Germanium" data-display-symbol="Ge"
          data-mass="72.63" data-valence="4"
-         data-pronunciation="jer-MAY-nee-um" data-year="Discovered in 1886">
+         data-pronunciation="jer-MAY-nee-um" data-year="Discovered in 1886" data-spotify="https://open.spotify.com/track/4P3hWYtLCZo3JnmgBZKjaN">
       <div class="atomic-number">32</div>
       <div class="symbol">Ge</div>
       <div class="name">Germanium</div>
@@ -534,7 +563,7 @@
          data-symbol="as" data-name="arsenic" data-number="33"
          data-display-name="Arsenic" data-display-symbol="As"
          data-mass="74.92" data-valence="5"
-         data-pronunciation="AR-sen-ik" data-year="Known since ancient times">
+         data-pronunciation="AR-sen-ik" data-year="Known since ancient times" data-spotify="https://open.spotify.com/track/3AOBoSViga31aHKzpYNiq5">
       <div class="atomic-number">33</div>
       <div class="symbol">As</div>
       <div class="name">Arsenic</div>
@@ -543,7 +572,7 @@
          data-symbol="se" data-name="selenium" data-number="34"
          data-display-name="Selenium" data-display-symbol="Se"
          data-mass="78.97" data-valence="6"
-         data-pronunciation="suh-LEE-nee-um" data-year="Discovered in 1817" data-family="Ta Pu">
+         data-pronunciation="suh-LEE-nee-um" data-year="Discovered in 1817" data-family="Ta Pu" data-spotify="https://open.spotify.com/track/5J8uawrYVACwh1zxOQrSzk">
       <div class="atomic-number">34</div>
       <div class="symbol">Se</div>
       <div class="name">Selenium</div>
@@ -552,7 +581,7 @@
          data-symbol="br" data-name="bromine" data-number="35"
          data-display-name="Bromine" data-display-symbol="Br"
          data-mass="79.9" data-valence="7"
-         data-pronunciation="BROH-meen" data-year="Discovered in 1825">
+         data-pronunciation="BROH-meen" data-year="Discovered in 1825" data-spotify="https://open.spotify.com/track/4fadUpTo00MbOqfj6maxqJ">
       <div class="atomic-number">35</div>
       <div class="symbol">Br</div>
       <div class="name">Bromine</div>
@@ -561,7 +590,7 @@
          data-symbol="kr" data-name="krypton" data-number="36"
          data-display-name="Krypton" data-display-symbol="Kr"
          data-mass="83.8" data-valence="8"
-         data-pronunciation="KRIP-ton" data-year="Discovered in 1898">
+         data-pronunciation="KRIP-ton" data-year="Discovered in 1898" data-spotify="https://open.spotify.com/track/1qZ1uA2j5tJk3MdGM7teaX">
       <div class="atomic-number">36</div>
       <div class="symbol">Kr</div>
       <div class="name">Krypton</div>
@@ -570,7 +599,7 @@
          data-symbol="rb" data-name="rubidium" data-number="37"
          data-display-name="Rubidium" data-display-symbol="Rb"
          data-mass="85.47" data-valence="1"
-         data-pronunciation="roo-BID-ee-um" data-year="Discovered in 1861">
+         data-pronunciation="roo-BID-ee-um" data-year="Discovered in 1861" data-spotify="https://open.spotify.com/track/7Jk29hO2E2pE543MyiuDIG">
       <div class="atomic-number">37</div>
       <div class="symbol">Rb</div>
       <div class="name">Rubidium</div>
@@ -579,7 +608,7 @@
          data-symbol="sr" data-name="strontium" data-number="38"
          data-display-name="Strontium" data-display-symbol="Sr"
          data-mass="87.62" data-valence="2"
-         data-pronunciation="STRON-shee-um" data-year="Discovered in 1790">
+         data-pronunciation="STRON-shee-um" data-year="Discovered in 1790" data-spotify="https://open.spotify.com/track/5cFQQHBaSDHbeHNcZSn82D">
       <div class="atomic-number">38</div>
       <div class="symbol">Sr</div>
       <div class="name">Strontium</div>
@@ -588,7 +617,7 @@
          data-symbol="y" data-name="yttrium" data-number="39"
          data-display-name="Yttrium" data-display-symbol="Y"
          data-mass="88.91" data-valence="3"
-         data-pronunciation="IT-ree-um" data-year="Discovered in 1794">
+         data-pronunciation="IT-ree-um" data-year="Discovered in 1794" data-spotify="https://open.spotify.com/track/5CvMObXdxGALAbyb7aRJeH">
       <div class="atomic-number">39</div>
       <div class="symbol">Y</div>
       <div class="name">Yttrium</div>
@@ -597,7 +626,7 @@
          data-symbol="zr" data-name="zirconium" data-number="40"
          data-display-name="Zirconium" data-display-symbol="Zr"
          data-mass="91.22" data-valence="4"
-         data-pronunciation="zer-KOH-nee-um" data-year="Discovered in 1789">
+         data-pronunciation="zer-KOH-nee-um" data-year="Discovered in 1789" data-spotify="https://open.spotify.com/track/0f668nn6NEA55WQtH9apKP">
       <div class="atomic-number">40</div>
       <div class="symbol">Zr</div>
       <div class="name">Zirconium</div>
@@ -606,7 +635,7 @@
          data-symbol="nb" data-name="niobium" data-number="41"
          data-display-name="Niobium" data-display-symbol="Nb"
          data-mass="92.91" data-valence="5"
-         data-pronunciation="nye-OH-bee-um" data-year="Discovered in 1801">
+         data-pronunciation="nye-OH-bee-um" data-year="Discovered in 1801" data-spotify="https://open.spotify.com/track/2vN3mX92JrtHAJX8rR9LUm">
       <div class="atomic-number">41</div>
       <div class="symbol">Nb</div>
       <div class="name">Niobium</div>
@@ -615,7 +644,7 @@
          data-symbol="mo" data-name="molybdenum" data-number="42"
          data-display-name="Molybdenum" data-display-symbol="Mo"
          data-mass="95.95" data-valence="6"
-         data-pronunciation="muh-LIB-duh-num" data-year="Discovered in 1778" data-family="Moonlight">
+         data-pronunciation="muh-LIB-duh-num" data-year="Discovered in 1778" data-family="Moonlight" data-spotify="https://open.spotify.com/track/5CcJAfdKhOQdISo6SQdKkV">
       <div class="atomic-number">42</div>
       <div class="symbol">Mo</div>
       <div class="name">Molybdenum</div>
@@ -624,7 +653,7 @@
          data-symbol="tc" data-name="technetium" data-number="43"
          data-display-name="Technetium" data-display-symbol="Tc"
          data-mass="98 (mass of most stable isotope)" data-valence="7"
-         data-pronunciation="tek-NEE-shee-um" data-year="Discovered in 1937">
+         data-pronunciation="tek-NEE-shee-um" data-year="Discovered in 1937" data-spotify="https://open.spotify.com/track/2LEeupyQfhCftsXphPrQJI">
       <div class="atomic-number">43</div>
       <div class="symbol">Tc</div>
       <div class="name">Technetium</div>
@@ -633,7 +662,7 @@
          data-symbol="ru" data-name="ruthenium" data-number="44"
          data-display-name="Ruthenium" data-display-symbol="Ru"
          data-mass="101.07" data-valence="3"
-         data-pronunciation="ROO-thee-nee-um" data-year="Discovered in 1844">
+         data-pronunciation="ROO-thee-nee-um" data-year="Discovered in 1844" data-spotify="https://open.spotify.com/track/40DPBGXgrwiIytYu5PAWwi">
       <div class="atomic-number">44</div>
       <div class="symbol">Ru</div>
       <div class="name">Ruthenium</div>
@@ -642,7 +671,7 @@
          data-symbol="rh" data-name="rhodium" data-number="45"
          data-display-name="Rhodium" data-display-symbol="Rh"
          data-mass="102.91" data-valence="3"
-         data-pronunciation="ROH-dee-um" data-year="Discovered in 1804">
+         data-pronunciation="ROH-dee-um" data-year="Discovered in 1804" data-spotify="https://open.spotify.com/track/3G86Jawi245wrkD2qUk9qO">
       <div class="atomic-number">45</div>
       <div class="symbol">Rh</div>
       <div class="name">Rhodium</div>
@@ -651,7 +680,7 @@
          data-symbol="pd" data-name="palladium" data-number="46"
          data-display-name="Palladium" data-display-symbol="Pd"
          data-mass="106.42" data-valence="2"
-         data-pronunciation="PAL-uh-dee-um" data-year="Discovered in 1802">
+         data-pronunciation="PAL-uh-dee-um" data-year="Discovered in 1802" data-spotify="https://open.spotify.com/track/3cJpKLHIwveNuMO4lYux5L">
       <div class="atomic-number">46</div>
       <div class="symbol">Pd</div>
       <div class="name">Palladium</div>
@@ -660,7 +689,7 @@
          data-symbol="ag" data-name="silver" data-number="47"
          data-display-name="Silver" data-display-symbol="Ag"
          data-mass="107.87" data-valence="1"
-         data-pronunciation="SIL-ver" data-year="Known since ancient times">
+         data-pronunciation="SIL-ver" data-year="Known since ancient times" data-spotify="https://open.spotify.com/track/6CmPMzkaQk8tURtrkteUhQ">
       <div class="atomic-number">47</div>
       <div class="symbol">Ag</div>
       <div class="name">Silver</div>
@@ -669,7 +698,7 @@
          data-symbol="cd" data-name="cadmium" data-number="48"
          data-display-name="Cadmium" data-display-symbol="Cd"
          data-mass="112.41" data-valence="2"
-         data-pronunciation="KAD-mee-um" data-year="Discovered in 1817">
+         data-pronunciation="KAD-mee-um" data-year="Discovered in 1817" data-spotify="https://open.spotify.com/track/0AsXsMOzwYmHadNVJG9DZs">
       <div class="atomic-number">48</div>
       <div class="symbol">Cd</div>
       <div class="name">Cadmium</div>
@@ -678,7 +707,7 @@
          data-symbol="in" data-name="indium" data-number="49"
          data-display-name="Indium" data-display-symbol="In"
          data-mass="114.82" data-valence="3"
-         data-pronunciation="IN-dee-um" data-year="Discovered in 1863">
+         data-pronunciation="IN-dee-um" data-year="Discovered in 1863" data-spotify="https://open.spotify.com/track/5LZaA1P86Rx74vadRLOXH4">
       <div class="atomic-number">49</div>
       <div class="symbol">In</div>
       <div class="name">Indium</div>
@@ -687,7 +716,7 @@
          data-symbol="sn" data-name="tin" data-number="50"
          data-display-name="Tin" data-display-symbol="Sn"
          data-mass="118.71" data-valence="4"
-         data-pronunciation="TIN" data-year="Known since ancient times" data-family="Yaiyo">
+         data-pronunciation="TIN" data-year="Known since ancient times" data-family="Yaiyo" data-spotify="https://open.spotify.com/track/09QHenx9ZfLDcsMgqIgFFl">
       <div class="atomic-number">50</div>
       <div class="symbol">Sn</div>
       <div class="name">Tin</div>
@@ -696,7 +725,7 @@
          data-symbol="sb" data-name="antimony" data-number="51"
          data-display-name="Antimony" data-display-symbol="Sb"
          data-mass="121.76" data-valence="5"
-         data-pronunciation="AN-tuh-moh-nee" data-year="Known since ancient times">
+         data-pronunciation="AN-tuh-moh-nee" data-year="Known since ancient times" data-spotify="https://open.spotify.com/track/64fUEjq3Q5IA2inB6y9Ii5">
       <div class="atomic-number">51</div>
       <div class="symbol">Sb</div>
       <div class="name">Antimony</div>
@@ -705,7 +734,7 @@
          data-symbol="te" data-name="tellurium" data-number="52"
          data-display-name="Tellurium" data-display-symbol="Te"
          data-mass="127.6" data-valence="6"
-         data-pronunciation="tuh-LOOR-ee-um" data-year="Discovered in 1782" data-family="Yaiyee">
+         data-pronunciation="tuh-LOOR-ee-um" data-year="Discovered in 1782" data-family="Yaiyee" data-spotify="https://open.spotify.com/track/3pAQvc96Zy3jN0TPneUffE">
       <div class="atomic-number">52</div>
       <div class="symbol">Te</div>
       <div class="name">Tellurium</div>
@@ -714,7 +743,7 @@
          data-symbol="i" data-name="iodine" data-number="53"
          data-display-name="Iodine" data-display-symbol="I"
          data-mass="126.9" data-valence="7"
-         data-pronunciation="EYE-oh-dyne" data-year="Discovered in 1811">
+         data-pronunciation="EYE-oh-dyne" data-year="Discovered in 1811" data-spotify="https://open.spotify.com/track/04d3IvUssUGaaFs8jrS2xm">
       <div class="atomic-number">53</div>
       <div class="symbol">I</div>
       <div class="name">Iodine</div>
@@ -723,7 +752,7 @@
          data-symbol="xe" data-name="xenon" data-number="54"
          data-display-name="Xenon" data-display-symbol="Xe"
          data-mass="131.29" data-valence="8"
-         data-pronunciation="ZEE-non" data-year="Discovered in 1898">
+         data-pronunciation="ZEE-non" data-year="Discovered in 1898" data-spotify="https://open.spotify.com/track/3IhBgRB7yoelVowi2afAli">
       <div class="atomic-number">54</div>
       <div class="symbol">Xe</div>
       <div class="name">Xenon</div>
@@ -732,7 +761,7 @@
          data-symbol="cs" data-name="caesium" data-number="55"
          data-display-name="Caesium" data-display-symbol="Cs"
          data-mass="132.91" data-valence="1"
-         data-pronunciation="SEE-zee-um" data-year="Discovered in 1860">
+         data-pronunciation="SEE-zee-um" data-year="Discovered in 1860" data-spotify="https://open.spotify.com/track/3WrjQVu7RkuJOU4SdJUo4x">
       <div class="atomic-number">55</div>
       <div class="symbol">Cs</div>
       <div class="name">Caesium</div>
@@ -741,7 +770,7 @@
          data-symbol="ba" data-name="barium" data-number="56"
          data-display-name="Barium" data-display-symbol="Ba"
          data-mass="137.33" data-valence="2"
-         data-pronunciation="BAIR-ee-um" data-year="Discovered in 1772">
+         data-pronunciation="BAIR-ee-um" data-year="Discovered in 1772" data-spotify="https://open.spotify.com/track/0dpf9X0LPu9stnu98KKAYS">
       <div class="atomic-number">56</div>
       <div class="symbol">Ba</div>
       <div class="name">Barium</div>
@@ -1044,7 +1073,7 @@
          data-symbol="la" data-name="lanthanum" data-number="57"
          data-display-name="Lanthanum" data-display-symbol="La"
          data-mass="138.91" data-valence="3"
-         data-pronunciation="lan-THAY-num" data-year="Discovered in 1838">
+         data-pronunciation="lan-THAY-num" data-year="Discovered in 1838" data-spotify="https://open.spotify.com/track/4AcvXTj3SL62o2if33tbZo">
       <div class="atomic-number">57</div>
       <div class="symbol">La</div>
       <div class="name">Lanthanum</div>
@@ -1053,7 +1082,7 @@
          data-symbol="ce" data-name="cerium" data-number="58"
          data-display-name="Cerium" data-display-symbol="Ce"
          data-mass="140.12" data-valence="3"
-         data-pronunciation="SEER-ee-um" data-year="Discovered in 1803">
+         data-pronunciation="SEER-ee-um" data-year="Discovered in 1803" data-spotify="https://open.spotify.com/track/0rQ7jROlvSe9TmXk31zaVK">
       <div class="atomic-number">58</div>
       <div class="symbol">Ce</div>
       <div class="name">Cerium</div>
@@ -1062,7 +1091,7 @@
          data-symbol="pr" data-name="praseodymium" data-number="59"
          data-display-name="Praseodymium" data-display-symbol="Pr"
          data-mass="140.91" data-valence="3"
-         data-pronunciation="pray-zee-oh-DIM-ee-um" data-year="Discovered in 1885">
+         data-pronunciation="pray-zee-oh-DIM-ee-um" data-year="Discovered in 1885" data-spotify="https://open.spotify.com/track/681q3KQvCLvYnFBrxutGh1">
       <div class="atomic-number">59</div>
       <div class="symbol">Pr</div>
       <div class="name">Praseodymium</div>
@@ -1401,6 +1430,7 @@
     });
 
     const searchBox = document.getElementById("search");
+    const searchClear = document.getElementById("search-clear");
     const tiles = document.querySelectorAll(".element-tile");
 
     // typing this exact word highlights a custom, hand-picked set of
@@ -1409,6 +1439,7 @@
 
     searchBox.addEventListener("input", () => {
       const query = searchBox.value.trim().toLowerCase();
+      searchClear.classList.toggle("visible", query !== "");
 
       tiles.forEach(tile => {
         if (query === "") {
@@ -1434,6 +1465,23 @@
       });
     });
 
+    searchClear.addEventListener("click", () => {
+      searchBox.value = "";
+      searchBox.dispatchEvent(new Event("input"));
+      searchBox.focus();
+    });
+
+    document.querySelectorAll(".element-tile.placeholder").forEach(placeholder => {
+      placeholder.addEventListener("click", () => {
+        const category = placeholder.classList.contains("lanthanide") ? "lanthanide" : "actinide";
+        const rowTiles = document.querySelectorAll(`.element-tile.${category}:not(.placeholder)`);
+        rowTiles.forEach(tile => tile.classList.add("flash-glow"));
+        setTimeout(() => {
+          rowTiles.forEach(tile => tile.classList.remove("flash-glow"));
+        }, 1000);
+      });
+    });
+
     const modalOverlay = document.getElementById("modal-overlay");
     const modalBody = document.getElementById("modal-body");
 
@@ -1441,6 +1489,9 @@
       tile.addEventListener("click", () => {
         const familyLine = tile.dataset.family
           ? `<p class="family-tag">💛 In our family, this one's ${tile.dataset.family}</p>`
+          : "";
+        const songLine = tile.dataset.spotify
+          ? `<p>🎵 Sonic Scholar song: <a href="${tile.dataset.spotify}" target="_blank" rel="noopener">Spotify</a></p>`
           : "";
         modalBody.innerHTML = `
           <h2>${tile.dataset.displayName} (${tile.dataset.displaySymbol})</h2>
@@ -1451,6 +1502,7 @@
             <button id="pronounce-btn" type="button">🔊 Play</button>
           </p>
           <p>${tile.dataset.year}</p>
+          ${songLine}
           ${familyLine}
         `;
         modalOverlay.classList.add("show");
