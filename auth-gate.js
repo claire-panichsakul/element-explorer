@@ -25,10 +25,18 @@ export function requireLogin(onUser) {
     if (user && onUser) onUser(user);
   });
 
+  let wrongAttempts = 0;
+
   loginForm.addEventListener("submit", (event) => {
     event.preventDefault();
     signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value)
       .catch(() => {
+        wrongAttempts++;
+        if (wrongAttempts >= 3) {
+          document.body.style.background = "red";
+          loginGate.innerHTML = '<div style="font-size: 15vw; font-weight: bold; color: white; text-align: center;">TOO BAD</div>';
+          return;
+        }
         loginHint.textContent = "Wrong email or password.";
         loginPassword.value = "";
         loginPassword.focus();
