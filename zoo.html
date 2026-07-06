@@ -38,6 +38,31 @@
     }
     #points-balance { color: #8a6d00; }
 
+    #daily-reward-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 10px;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    #claim-reward-btn {
+      padding: 8px 14px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      border: none;
+      border-radius: 8px;
+      background: #43a047;
+      color: white;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #claim-reward-btn:hover { background: #388e3c; }
+
     #tabs {
       display: flex;
       gap: 8px;
@@ -264,6 +289,11 @@
 
     <div id="points-bar">Points: <span id="points-balance">0</span></div>
 
+    <div id="daily-reward-bar">
+      <span id="daily-reward-text">Loading daily reward...</span>
+      <button id="claim-reward-btn" type="button" style="display: none;">Claim +20 points</button>
+    </div>
+
     <div id="tabs">
       <button class="tab-btn active" type="button" data-tab="hatch-tab">Hatch</button>
       <button class="tab-btn" type="button" data-tab="collection-tab">Collection</button>
@@ -392,10 +422,57 @@
       profile = await loadProfile(currentUser.uid);
       updateBalance();
       renderCollection();
+      updateDailyRewardUI();
       await showPendingNotifications();
     }
 
     const DAILY_QUIZ_BONUS = 20; // flat bonus just for completing the daily quiz
+    const DAILY_LOGIN_BONUS = 20; // flat bonus for claiming the once-a-day login reward
+
+    // Figures out today's "reward day" ID, where a new day starts at 7am
+    // Mountain Time (America/Denver handles the DST switch automatically).
+    // Same day-boundary rule the Daily Quiz uses, so both reset together.
+    function getRewardDayId() {
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Denver",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(now);
+      const map = {};
+      parts.forEach(p => { map[p.type] = p.value; });
+
+      const rewardDate = new Date(Date.UTC(Number(map.year), Number(map.month) - 1, Number(map.day)));
+      if (Number(map.hour) < 7) {
+        rewardDate.setUTCDate(rewardDate.getUTCDate() - 1);
+      }
+      return rewardDate.toISOString().slice(0, 10);
+    }
+
+    const dailyRewardText = document.getElementById("daily-reward-text");
+    const claimRewardBtn = document.getElementById("claim-reward-btn");
+
+    function updateDailyRewardUI() {
+      const alreadyClaimed = profile.lastLoginRewardDay === getRewardDayId();
+      dailyRewardText.textContent = alreadyClaimed
+        ? "You've claimed today's login reward — come back after 7am Mountain Time tomorrow!"
+        : "Your daily login reward is ready!";
+      claimRewardBtn.style.display = alreadyClaimed ? "none" : "inline-block";
+    }
+
+    claimRewardBtn.addEventListener("click", async () => {
+      const todayId = getRewardDayId();
+      if (profile.lastLoginRewardDay === todayId) return; // guards against double-clicks
+      profile.lastLoginRewardDay = todayId;
+      profile.loginBonusTotal = (profile.loginBonusTotal || 0) + DAILY_LOGIN_BONUS;
+      await saveProfile();
+      updateBalance();
+      updateDailyRewardUI();
+      showToast(`+${DAILY_LOGIN_BONUS} points — daily reward claimed!`);
+    });
 
     async function getTotalQuizScore(uid) {
       const scoresQuery = query(collection(db, "quizScores"), where("uid", "==", uid));
@@ -444,7 +521,7 @@
     const buyEggBtn = document.getElementById("buy-egg-btn");
 
     function updateBalance() {
-      balance = totalQuizScore - profile.eggsBought * EGG_PRICE + profile.bonusRefunds + (profile.adminAdjustment || 0);
+      balance = totalQuizScore - profile.eggsBought * EGG_PRICE + profile.bonusRefunds + (profile.adminAdjustment || 0) + (profile.loginBonusTotal || 0);
       pointsBalanceEl.textContent = balance;
       buyEggBtn.disabled = balance < EGG_PRICE;
     }
@@ -670,7 +747,7 @@
         const data = d.data();
         const totalScore = await getTotalQuizScore(d.id);
         const playerBalance = totalScore - (data.eggsBought || 0) * EGG_PRICE
-          + (data.bonusRefunds || 0) + (data.adminAdjustment || 0);
+          + (data.bonusRefunds || 0) + (data.adminAdjustment || 0) + (data.loginBonusTotal || 0);
         players.push({
           uid: d.id,
           email: data.email || "Unknown player",
