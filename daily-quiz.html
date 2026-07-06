@@ -159,54 +159,16 @@
       where,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { PRACTICE_QUESTIONS, ELEMENT_QUIZZES } from "./quiz-data.js";
 
-    // Pool of daily-quiz-only questions (none of these appear in the practice
-    // quiz pool). Each day, 10 are picked deterministically so everyone sees
-    // the same 10 questions on the same day.
-    const DAILY_QUESTIONS = [
-      { q: "What is the chemical symbol for boron?", qTh: "สัญลักษณ์ทางเคมีของโบรอนคืออะไร", choices: ["B", "Bo", "Br", "Bn"], choicesTh: ["B", "Bo", "Br", "Bn"], correct: 0 },
-      { q: "What is the chemical symbol for germanium?", qTh: "สัญลักษณ์ทางเคมีของเจอร์เมเนียมคืออะไร", choices: ["Ge", "Gm", "Gr", "Ga"], choicesTh: ["Ge", "Gm", "Gr", "Ga"], correct: 0 },
-      { q: "What is the chemical symbol for arsenic?", qTh: "สัญลักษณ์ทางเคมีของสารหนู (อาร์เซนิก) คืออะไร", choices: ["As", "Ar", "At", "Ac"], choicesTh: ["As", "Ar", "At", "Ac"], correct: 0 },
-      { q: "What is the chemical symbol for antimony?", qTh: "สัญลักษณ์ทางเคมีของพลวง (แอนติโมนี) คืออะไร", choices: ["Sb", "An", "At", "Am"], choicesTh: ["Sb", "An", "At", "Am"], correct: 0 },
-      { q: "What is the chemical symbol for bismuth?", qTh: "สัญลักษณ์ทางเคมีของบิสมัทคืออะไร", choices: ["Bi", "Bs", "Bm", "Bo"], choicesTh: ["Bi", "Bs", "Bm", "Bo"], correct: 0 },
-      { q: "What is the chemical symbol for cobalt?", qTh: "สัญลักษณ์ทางเคมีของโคบอลต์คืออะไร", choices: ["Co", "Cb", "Ct", "Cl"], choicesTh: ["Co", "Cb", "Ct", "Cl"], correct: 0 },
-      { q: "What is the chemical symbol for nickel?", qTh: "สัญลักษณ์ทางเคมีของนิกเกิลคืออะไร", choices: ["Ni", "Nc", "Nk", "No"], choicesTh: ["Ni", "Nc", "Nk", "No"], correct: 0 },
-      { q: "What is the chemical symbol for manganese?", qTh: "สัญลักษณ์ทางเคมีของแมงกานีสคืออะไร", choices: ["Mn", "Mg", "Mo", "Ma"], choicesTh: ["Mn", "Mg", "Mo", "Ma"], correct: 0 },
-      { q: "What is the chemical symbol for chromium?", qTh: "สัญลักษณ์ทางเคมีของโครเมียมคืออะไร", choices: ["Cr", "Ch", "Co", "Cm"], choicesTh: ["Cr", "Ch", "Co", "Cm"], correct: 0 },
-      { q: "What is the chemical symbol for vanadium?", qTh: "สัญลักษณ์ทางเคมีของวาเนเดียมคืออะไร", choices: ["V", "Va", "Vn", "Vd"], choicesTh: ["V", "Va", "Vn", "Vd"], correct: 0 },
-      { q: "Which transition metal is added to iron to make stainless steel resistant to rust and corrosion?", qTh: "โลหะทรานซิชันชนิดใดถูกเติมลงในเหล็กเพื่อทำให้เป็นสเตนเลสที่ทนสนิมและการกัดกร่อน", choices: ["Chromium", "Zinc", "Tin", "Lead"], choicesTh: ["โครเมียม", "สังกะสี", "ดีบุก", "ตะกั่ว"], correct: 0 },
-      { q: "Which noble gas makes up about 1% of Earth's atmosphere and is used to fill incandescent light bulbs to keep the filament from burning out?", qTh: "แก๊สมีตระกูลชนิดใดคิดเป็นประมาณ 1% ของบรรยากาศโลก และถูกใช้เติมในหลอดไฟแบบไส้เพื่อไม่ให้ไส้หลอดขาดง่าย", choices: ["Argon", "Neon", "Krypton", "Xenon"], choicesTh: ["อาร์กอน", "นีออน", "คริปทอน", "ซีนอน"], correct: 0 },
-      { q: "Which halogen's name comes from the Greek word for \"stench\" because of its foul-smelling compounds?", qTh: "ธาตุแฮโลเจนชนิดใดมีชื่อมาจากคำภาษากรีกที่แปลว่า \"กลิ่นเหม็น\" เพราะสารประกอบของมันมีกลิ่นเหม็น", choices: ["Bromine", "Chlorine", "Fluorine", "Iodine"], choicesTh: ["โบรมีน", "คลอรีน", "ฟลูออรีน", "ไอโอดีน"], correct: 0 },
-      { q: "Which metal melts at just above room temperature and is sometimes used as a safer alternative to mercury in thermometers?", qTh: "โลหะชนิดใดหลอมเหลวที่อุณหภูมิสูงกว่าอุณหภูมิห้องเพียงเล็กน้อย และบางครั้งถูกใช้แทนปรอทในเทอร์โมมิเตอร์เพื่อความปลอดภัย", choices: ["Gallium", "Aluminum", "Tin", "Zinc"], choicesTh: ["แกลเลียม", "อะลูมิเนียม", "ดีบุก", "สังกะสี"], correct: 0 },
-      { q: "Which element is named after the country of France?", qTh: "ธาตุใดตั้งชื่อตามประเทศฝรั่งเศส", choices: ["Francium", "Germanium", "Polonium", "Americium"], choicesTh: ["แฟรนเซียม", "เจอร์เมเนียม", "พอโลเนียม", "อะเมริเซียม"], correct: 0 },
-      { q: "Which element was named after Poland, the home country of its co-discoverer Marie Curie?", qTh: "ธาตุใดตั้งชื่อตามประเทศโปแลนด์ บ้านเกิดของมารี กูว์รี ผู้ร่วมค้นพบธาตุนี้", choices: ["Polonium", "Francium", "Curium", "Radium"], choicesTh: ["พอโลเนียม", "แฟรนเซียม", "คูเรียม", "เรเดียม"], correct: 0 },
-      { q: "What is the chemical formula for water?", qTh: "สูตรเคมีของน้ำคืออะไร", choices: ["H2O", "CO2", "O2", "NaCl"], choicesTh: ["H2O", "CO2", "O2", "NaCl"], correct: 0 },
-      { q: "Which element was named after the planet Uranus?", qTh: "ธาตุใดตั้งชื่อตามดาวยูเรนัส", choices: ["Uranium", "Neptunium", "Plutonium", "Titanium"], choicesTh: ["ยูเรเนียม", "เนปทูเนียม", "พลูโทเนียม", "ไทเทเนียม"], correct: 0 },
-      { q: "What is the chemical formula for table salt?", qTh: "สูตรเคมีของเกลือแกงคืออะไร", choices: ["NaCl", "H2O", "CO2", "O2"], choicesTh: ["NaCl", "H2O", "CO2", "O2"], correct: 0 },
-      { q: "Which is the only nonmetal that is a liquid at room temperature?", qTh: "อโลหะชนิดเดียวที่เป็นของเหลวที่อุณหภูมิห้องคือธาตุใด", choices: ["Bromine", "Mercury", "Gallium", "Chlorine"], choicesTh: ["โบรมีน", "ปรอท", "แกลเลียม", "คลอรีน"], correct: 0 },
-      { q: "Which gas, made of three oxygen atoms (O3), forms a layer high in Earth's atmosphere that blocks harmful UV rays?", qTh: "แก๊สที่ประกอบด้วยออกซิเจน 3 อะตอม (O3) ซึ่งก่อตัวเป็นชั้นสูงในบรรยากาศโลกและช่วยกรองรังสียูวีที่เป็นอันตรายคือแก๊สใด", choices: ["Ozone", "Oxygen", "Carbon dioxide", "Nitrogen"], choicesTh: ["โอโซน", "ออกซิเจน", "คาร์บอนไดออกไซด์", "ไนโตรเจน"], correct: 0 },
-      { q: "What do we call a chemical reaction that releases heat into its surroundings?", qTh: "เราเรียกปฏิกิริยาเคมีที่คายความร้อนออกสู่สิ่งแวดล้อมว่าอะไร", choices: ["Exothermic reaction", "Endothermic reaction", "Synthesis reaction", "Decomposition reaction"], choicesTh: ["ปฏิกิริยาคายความร้อน", "ปฏิกิริยาดูดความร้อน", "ปฏิกิริยาการรวมตัว", "ปฏิกิริยาการสลายตัว"], correct: 0 },
-      { q: "What do we call a chemical reaction that absorbs heat from its surroundings?", qTh: "เราเรียกปฏิกิริยาเคมีที่ดูดความร้อนจากสิ่งแวดล้อมว่าอะไร", choices: ["Endothermic reaction", "Exothermic reaction", "Combustion reaction", "Single replacement reaction"], choicesTh: ["ปฏิกิริยาดูดความร้อน", "ปฏิกิริยาคายความร้อน", "ปฏิกิริยาการเผาไหม้", "ปฏิกิริยาแทนที่เดี่ยว"], correct: 0 },
-      { q: "What do we call a substance that speeds up a chemical reaction without being used up itself?", qTh: "เราเรียกสารที่ช่วยเร่งปฏิกิริยาเคมีให้เร็วขึ้นโดยตัวมันเองไม่ถูกใช้ไปว่าอะไร", choices: ["A catalyst", "A solvent", "A solute", "An isotope"], choicesTh: ["ตัวเร่งปฏิกิริยา", "ตัวทำละลาย", "ตัวละลาย", "ไอโซโทป"], correct: 0 },
-      { q: "What is the smallest unit of an element that still has the properties of that element?", qTh: "หน่วยที่เล็กที่สุดของธาตุที่ยังคงสมบัติของธาตุนั้นไว้เรียกว่าอะไร", choices: ["An atom", "A molecule", "A compound", "An ion"], choicesTh: ["อะตอม", "โมเลกุล", "สารประกอบ", "ไอออน"], correct: 0 },
-      { q: "What is the smallest unit of a compound that still has the properties of that compound?", qTh: "หน่วยที่เล็กที่สุดของสารประกอบที่ยังคงสมบัติของสารประกอบนั้นไว้เรียกว่าอะไร", choices: ["A molecule", "An atom", "An element", "An isotope"], choicesTh: ["โมเลกุล", "อะตอม", "ธาตุ", "ไอโซโทป"], correct: 0 },
-      { q: "Which law states that matter cannot be created or destroyed in a chemical reaction, only rearranged?", qTh: "กฎใดกล่าวว่าสสารไม่สามารถถูกสร้างขึ้นใหม่หรือถูกทำลายได้ในปฏิกิริยาเคมี ทำได้เพียงจัดเรียงใหม่เท่านั้น", choices: ["Law of conservation of mass", "Law of definite proportions", "Newton's first law", "Law of multiple proportions"], choicesTh: ["กฎทรงมวล", "กฎสัดส่วนคงที่", "กฎข้อที่หนึ่งของนิวตัน", "กฎสัดส่วนพหุคูณ"], correct: 0 },
-      { q: "In a correctly balanced chemical equation, what must be equal on both sides of the equation?", qTh: "ในสมการเคมีที่ดุลแล้วอย่างถูกต้อง สิ่งใดต้องเท่ากันทั้งสองข้างของสมการ", choices: ["The number of atoms of each element", "The number of molecules", "The total mass in grams", "The number of compounds"], choicesTh: ["จำนวนอะตอมของแต่ละธาตุ", "จำนวนโมเลกุล", "มวลรวมเป็นกรัม", "จำนวนสารประกอบ"], correct: 0 },
-      { q: "What is the chemical formula for the gas humans need to breathe to survive?", qTh: "สูตรเคมีของแก๊สที่มนุษย์ต้องหายใจเพื่อมีชีวิตอยู่คืออะไร", choices: ["O2", "CO2", "H2O", "N2"], choicesTh: ["O2", "CO2", "H2O", "N2"], correct: 0 },
-      { q: "Which of these gemstones is made of pure carbon arranged in a crystal structure?", qTh: "อัญมณีชนิดใดต่อไปนี้ทำจากคาร์บอนบริสุทธิ์ที่จัดเรียงตัวเป็นผลึก", choices: ["Diamond", "Ruby", "Emerald", "Sapphire"], choicesTh: ["เพชร", "ทับทิม", "มรกต", "ไพลิน"], correct: 0 },
-      { q: "What do we call an atom that has gained or lost electrons, giving it an electric charge?", qTh: "เราเรียกอะตอมที่ได้รับหรือเสียอิเล็กตรอนจนมีประจุไฟฟ้าว่าอะไร", choices: ["An ion", "An isotope", "An isomer", "A radical"], choicesTh: ["ไอออน", "ไอโซโทป", "ไอโซเมอร์", "อนุมูลอิสระ"], correct: 0 },
-      { q: "What is the chemical symbol for silicon?", qTh: "สัญลักษณ์ทางเคมีของซิลิคอนคืออะไร", choices: ["Si", "Sl", "Sc", "So"], choicesTh: ["Si", "Sl", "Sc", "So"], correct: 0 },
-      { q: "What is the freezing point of water in Celsius?", qTh: "จุดเยือกแข็งของน้ำมีค่ากี่องศาเซลเซียส", choices: ["0°C", "100°C", "32°C", "-10°C"], choicesTh: ["0°C", "100°C", "32°C", "-10°C"], correct: 0 },
-      { q: "What is the boiling point of water in Celsius, at sea level?", qTh: "จุดเดือดของน้ำที่ระดับน้ำทะเลมีค่ากี่องศาเซลเซียส", choices: ["100°C", "0°C", "212°C", "50°C"], choicesTh: ["100°C", "0°C", "212°C", "50°C"], correct: 0 },
-      { q: "Which of these is NOT one of the three most common states of matter?", qTh: "ข้อใดต่อไปนี้ไม่ใช่หนึ่งในสถานะหลักสามสถานะของสสาร", choices: ["Mineral", "Solid", "Liquid", "Gas"], choicesTh: ["แร่ธาตุ", "ของแข็ง", "ของเหลว", "แก๊ส"], correct: 0 },
-      { q: "Which state of matter has particles that are the most spread out and moving the fastest?", qTh: "สถานะของสสารใดมีอนุภาคที่กระจายตัวมากที่สุดและเคลื่อนที่เร็วที่สุด", choices: ["Gas", "Liquid", "Solid", "Plasma"], choicesTh: ["แก๊ส", "ของเหลว", "ของแข็ง", "พลาสมา"], correct: 0 },
-      { q: "Which period (row) of the periodic table contains only hydrogen and helium?", qTh: "คาบใดในตารางธาตุที่มีเพียงไฮโดรเจนและฮีเลียมเท่านั้น", choices: ["Period 1", "Period 2", "Period 7", "Period 18"], choicesTh: ["คาบที่ 1", "คาบที่ 2", "คาบที่ 7", "คาบที่ 18"], correct: 0 },
-      { q: "How many elements are in Period 1 of the periodic table?", qTh: "คาบที่ 1 ของตารางธาตุมีธาตุทั้งหมดกี่ธาตุ", choices: ["2", "8", "18", "32"], choicesTh: ["2", "8", "18", "32"], correct: 0 },
-      { q: "Which of these elements is man-made and does not occur naturally on Earth in any meaningful amount?", qTh: "ธาตุใดต่อไปนี้เป็นธาตุที่มนุษย์สร้างขึ้น และแทบไม่พบตามธรรมชาติบนโลก", choices: ["Plutonium", "Iron", "Gold", "Oxygen"], choicesTh: ["พลูโทเนียม", "เหล็ก", "ทองคำ", "ออกซิเจน"], correct: 0 },
-      { q: "Which soft, silvery metal reacts so violently with water that it must be stored under oil, and is even more reactive than sodium?", qTh: "โลหะสีเงินอ่อนชนิดใดทำปฏิกิริยากับน้ำรุนแรงมากจนต้องเก็บไว้ในน้ำมัน และว่องไวต่อปฏิกิริยามากกว่าโซเดียม", choices: ["Potassium", "Sodium", "Lithium", "Calcium"], choicesTh: ["โพแทสเซียม", "โซเดียม", "ลิเธียม", "แคลเซียม"], correct: 0 }
-    ];
+    // The daily quiz blends questions from both the practice quiz pool and
+    // the per-element quizzes. Element quizzes are grouped by element, so
+    // flatten them into one list of plain questions to pick from.
+    const ELEMENT_QUESTIONS = Object.values(ELEMENT_QUIZZES).flatMap(el => el.questions);
 
-    const ROUND_SIZE = 10;
+    const PRACTICE_COUNT = 5;
+    const ELEMENT_COUNT = 5;
+    const ROUND_SIZE = PRACTICE_COUNT + ELEMENT_COUNT;
 
     // Figures out "today's" quiz day, where a new day starts at 7am
     // Mountain Time (America/Denver handles the DST switch automatically).
@@ -266,7 +228,12 @@
 
     const quizDate = getQuizDay();
     const dayId = quizDayId(quizDate);
-    const round = seededShuffle(DAILY_QUESTIONS, hashStringToInt(dayId)).slice(0, ROUND_SIZE);
+
+    // always 5 practice-quiz questions and 5 element-quiz questions, then
+    // shuffled together so everyone sees the same blended order that day
+    const practicePart = seededShuffle(PRACTICE_QUESTIONS, hashStringToInt(dayId + ":practice")).slice(0, PRACTICE_COUNT);
+    const elementPart = seededShuffle(ELEMENT_QUESTIONS, hashStringToInt(dayId + ":element")).slice(0, ELEMENT_COUNT);
+    const round = seededShuffle([...practicePart, ...elementPart], hashStringToInt(dayId + ":order"));
 
     document.getElementById("daily-date-text").textContent =
       "Today's quiz: " + quizDate.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
