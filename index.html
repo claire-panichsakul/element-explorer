@@ -1776,6 +1776,10 @@
         const songLine = tile.dataset.spotify
           ? `<p>🎵 Sonic Scholar song: <a href="${tile.dataset.spotify}" target="_blank" rel="noopener">Spotify</a></p>`
           : "";
+        // only elements 1-59 have a quiz built for them so far
+        const quizLine = Number(tile.dataset.number) <= 59
+          ? `<p><a href="element-quiz.html?el=${tile.dataset.number}">Take the ${tile.dataset.displayName} quiz &rarr;</a></p>`
+          : "";
         modalBody.innerHTML = `
           <h2>${tile.dataset.displayName} (${tile.dataset.displaySymbol})</h2>
           <p>Atomic number: ${tile.dataset.number}</p>
@@ -1787,6 +1791,7 @@
           <p>${tile.dataset.year}</p>
           ${songLine}
           ${familyLine}
+          ${quizLine}
         `;
         modalOverlay.classList.add("show");
 
