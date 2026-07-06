@@ -2,16 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Element Explorer</title>
   <style>
+    body {
+      margin: 12px;
+    }
     .periodic-table {
       display: grid;
-      grid-template-columns: repeat(18, 56px);
-      grid-auto-rows: 56px;
+      grid-template-columns: repeat(18, minmax(0, 56px));
       gap: 3px;
+      max-width: 100%;
+      width: fit-content;
     }
     .element-tile {
       position: relative;
+      aspect-ratio: 1 / 1;
       border-radius: 8px;
       color: white;
       font-family: Arial, sans-serif;
@@ -28,16 +34,16 @@
       z-index: 10;
     }
     .atomic-number {
-      font-size: 8px;
+      font-size: clamp(4px, 1.3vw, 8px);
       align-self: flex-start;
       margin: 2px 0 0 4px;
     }
     .symbol {
-      font-size: 16px;
+      font-size: clamp(7px, 3.2vw, 16px);
       font-weight: bold;
     }
     .name {
-      font-size: 6px;
+      font-size: clamp(3px, 1vw, 6px);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -45,10 +51,15 @@
     }
     .placeholder {
       opacity: 0.5;
-      font-size: 9px;
+      font-size: clamp(4px, 1.6vw, 9px);
     }
     .placeholder .symbol {
-      font-size: 9px;
+      font-size: clamp(4px, 1.8vw, 9px);
+    }
+    @media (max-width: 480px) {
+      .name {
+        display: none;
+      }
     }
 
     /* sparkle effect, drawn with ::before/::after so we don't
@@ -192,7 +203,8 @@
 
     .search-wrapper {
       position: relative;
-      display: inline-block;
+      display: block;
+      max-width: 340px;
       margin-bottom: 12px;
     }
     #search {
@@ -200,7 +212,8 @@
       padding: 8px 28px 8px 10px;
       font-size: 14px;
       font-family: Arial, sans-serif;
-      width: 340px;
+      width: 100%;
+      box-sizing: border-box;
       border: 1px solid #aaa;
       border-radius: 6px;
     }
@@ -231,9 +244,11 @@
       font-family: Arial, sans-serif;
     }
     #year-slider {
-      width: 340px;
+      width: calc(100% - 8px);
+      max-width: 340px;
       vertical-align: middle;
       margin-left: 8px;
+      box-sizing: border-box;
     }
     #year-label {
       font-weight: bold;
@@ -245,9 +260,11 @@
       font-family: Arial, sans-serif;
     }
     #temp-slider {
-      width: 340px;
+      width: 100%;
+      max-width: 340px;
       vertical-align: middle;
-      margin: 0 8px;
+      margin: 0 8px 0 0;
+      box-sizing: border-box;
     }
     #temp-label {
       font-weight: bold;
