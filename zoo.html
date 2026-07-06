@@ -135,6 +135,37 @@
     }
     #toast.visible { opacity: 1; }
 
+    #admin-notification {
+      display: none;
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      max-width: 420px;
+      background: #fff3cd;
+      border: 2px solid #ffe08a;
+      border-radius: 14px;
+      padding: 20px 44px 20px 22px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #8a6d00;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    #admin-notification-close {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      line-height: 1;
+      font-weight: bold;
+      color: #8a6d00;
+      cursor: pointer;
+      padding: 4px;
+    }
+
     #collection-controls {
       display: flex;
       gap: 16px;
@@ -277,6 +308,11 @@
 
   <div id="toast"></div>
 
+  <div id="admin-notification">
+    <button id="admin-notification-close" type="button" aria-label="Close">&times;</button>
+    <div id="admin-notification-message"></div>
+  </div>
+
   <script type="module">
     import { requireAuth } from "./auth-gate.js";
     import { db } from "./firebase-init.js";
@@ -289,7 +325,8 @@
       getDoc,
       setDoc,
       increment,
-      arrayUnion
+      arrayUnion,
+      arrayRemove
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     // UI-only gate: this just decides whether to show the Admin tab. The
@@ -380,15 +417,15 @@
     }
 
     // The admin queues messages onto profile.pendingNotifications (see
-    // givePet/adjustPoints below). Show each one as a toast, then clear the
-    // list so they don't pop up again on the next visit.
+    // givePet/adjustPoints below). Show each one and wait for the player to
+    // close it themselves before showing the next, then clear the list so
+    // they don't pop up again on the next visit.
     async function showPendingNotifications() {
       const notifications = profile.pendingNotifications || [];
       if (notifications.length === 0) return;
 
       for (const note of notifications) {
-        showToast(note.message);
-        await sleep(3500);
+        await showAdminNotification(note.message);
       }
 
       profile.pendingNotifications = [];
@@ -450,6 +487,23 @@
       toast.textContent = message;
       toast.classList.add("visible");
       setTimeout(() => toast.classList.remove("visible"), 3000);
+    }
+
+    // Bigger notification for admin-given points/pets. Unlike the toast
+    // above, it stays on screen until the player clicks the × themselves.
+    const adminNotification = document.getElementById("admin-notification");
+    const adminNotificationMessage = document.getElementById("admin-notification-message");
+    const adminNotificationClose = document.getElementById("admin-notification-close");
+
+    function showAdminNotification(message) {
+      return new Promise((resolve) => {
+        adminNotificationMessage.textContent = message;
+        adminNotification.style.display = "block";
+        adminNotificationClose.onclick = () => {
+          adminNotification.style.display = "none";
+          resolve();
+        };
+      });
     }
 
     buyEggBtn.addEventListener("click", async () => {
@@ -611,7 +665,7 @@
           uid: d.id,
           email: data.email || "Unknown player",
           balance: playerBalance,
-          animalCount: (data.animals || []).length
+          animals: data.animals || []
         });
       }
       players.sort((a, b) => a.email.localeCompare(b.email));
@@ -626,8 +680,29 @@
 
       const heading = document.createElement("h3");
       heading.className = "player-heading";
-      heading.textContent = `${player.email} — Balance: ${player.balance} — ${player.animalCount} animal${player.animalCount === 1 ? "" : "s"}`;
+      heading.textContent = `${player.email} — Balance: ${player.balance} — ${player.animals.length} animal${player.animals.length === 1 ? "" : "s"}`;
       card.appendChild(heading);
+
+      if (player.animals.length > 0) {
+        const petsRow = document.createElement("div");
+        petsRow.className = "admin-row";
+
+        const petSelect = document.createElement("select");
+        player.animals.forEach((animal, index) => {
+          const opt = document.createElement("option");
+          opt.value = index;
+          opt.textContent = `${animal.name} (${RARITY_LABELS[animal.tier]})`;
+          petSelect.appendChild(opt);
+        });
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.textContent = "Remove pet";
+        removeBtn.addEventListener("click", () => removePet(player.uid, player.animals[Number(petSelect.value)]));
+
+        petsRow.append("Current pets:", petSelect, removeBtn);
+        card.appendChild(petsRow);
+      }
 
       // Points row
       const pointsRow = document.createElement("div");
@@ -722,6 +797,16 @@
         }, { merge: true });
         showToast(`Gave ${name} (${RARITY_LABELS[tier]}).`);
       }
+      loadAdminPanel();
+    }
+
+    async function removePet(uid, animal) {
+      // arrayRemove matches on the whole object, including hatchedAt, so
+      // this removes just this one hatch — not every animal with this name.
+      await setDoc(doc(db, "zooProfiles", uid), {
+        animals: arrayRemove(animal)
+      }, { merge: true });
+      showToast(`Removed ${animal.name} (${RARITY_LABELS[animal.tier]}).`);
       loadAdminPanel();
     }
   </script>
