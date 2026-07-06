@@ -47,3 +47,20 @@ export function requireLogin(onUser) {
     logoutLink.addEventListener("click", () => signOut(auth));
   }
 }
+
+// For pages other than the main login page: no login form here, so if
+// nobody's logged in, send them to index.html to log in there instead.
+export function requireAuth(onUser) {
+  const mainContent = document.getElementById("main-content");
+  const loggedInAs = document.getElementById("logged-in-as");
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.href = "index.html";
+      return;
+    }
+    mainContent.style.display = "block";
+    if (loggedInAs) loggedInAs.textContent = `Logged in as ${user.email}`;
+    if (onUser) onUser(user);
+  });
+}

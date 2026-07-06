@@ -67,73 +67,27 @@
     .plays-row li {
       margin: 4px 0;
     }
-    #login-gate {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      font-family: Arial, sans-serif;
-      margin: -40px -16px;
-    }
-    #login-form {
-      text-align: center;
-      background: #f2f2f2;
-      padding: 30px 40px;
-      border-radius: 12px;
-    }
-    #login-email, #login-password {
-      display: block;
-      margin: 10px auto;
-      padding: 8px 10px;
-      font-size: 14px;
-      border: 1px solid #aaa;
-      border-radius: 6px;
-      width: 220px;
-    }
-    #login-hint {
-      color: #c00;
-      font-size: 13px;
-      min-height: 16px;
-    }
     #logged-in-as {
       font-size: 13px;
       color: #666;
       font-weight: normal;
     }
-    #logout-link {
-      display: inline-block;
-      margin-left: 12px;
-      font-size: 13px;
-      color: #666;
-      cursor: pointer;
-      text-decoration: underline;
-    }
   </style>
 </head>
 <body>
-
-  <div id="login-gate" style="display: none;">
-    <form id="login-form">
-      <h2>Log in</h2>
-      <input type="email" id="login-email" placeholder="Email" autofocus required>
-      <input type="password" id="login-password" placeholder="Password" required>
-      <button type="submit">Log in</button>
-      <p id="login-hint"></p>
-    </form>
-  </div>
 
   <div id="main-content" style="display: none;">
 
     <a href="index.html" class="back-link">&larr; Back to Periodic Table</a>
     <a href="quiz.html" class="back-link">&larr; Back to Quiz</a>
-    <h1>Quiz Leaderboard <span id="logged-in-as"></span> <span id="logout-link">Log out</span></h1>
+    <h1>Quiz Leaderboard <span id="logged-in-as"></span></h1>
 
     <div id="leaderboard">Loading...</div>
 
   </div>
 
   <script type="module">
-    import { requireLogin } from "./auth-gate.js";
+    import { requireAuth } from "./auth-gate.js";
     import { db } from "./firebase-init.js";
     import {
       collection,
@@ -142,7 +96,7 @@
       orderBy
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-    requireLogin(loadLeaderboard);
+    requireAuth(loadLeaderboard);
 
     async function loadLeaderboard() {
       const board = document.getElementById("leaderboard");
