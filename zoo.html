@@ -179,6 +179,24 @@
       letter-spacing: 0.5px;
     }
 
+    .admin-card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+    .admin-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .admin-row select, .admin-row input, .admin-row button {
+      font-size: 14px;
+      padding: 4px 6px;
+    }
+
     /* Rarity colors, shared by collection cards and the hatch reveal card */
     .tier-common { border-color: #2e7d32; }
     .tier-common .card-name, .tier-common .card-rarity, .tier-common .reveal-rarity { color: #2e7d32; }
@@ -211,6 +229,7 @@
       <button class="tab-btn active" type="button" data-tab="hatch-tab">Hatch</button>
       <button class="tab-btn" type="button" data-tab="collection-tab">Collection</button>
       <button class="tab-btn" type="button" data-tab="others-tab">Other Players</button>
+      <button class="tab-btn" type="button" data-tab="admin-tab" id="admin-tab-btn" style="display: none;">Admin</button>
     </div>
 
     <div id="hatch-tab" class="tab-panel">
@@ -249,6 +268,11 @@
       <div id="others-list"></div>
     </div>
 
+    <div id="admin-tab" class="tab-panel" style="display: none;">
+      <p style="color:#666; font-size: 14px;">Give or take points, or hand out a pet. Only players who've opened this page at least once show up here.</p>
+      <div id="admin-list"></div>
+    </div>
+
   </div>
 
   <div id="toast"></div>
@@ -263,8 +287,15 @@
       where,
       doc,
       getDoc,
-      setDoc
+      setDoc,
+      increment,
+      arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    // UI-only gate: this just decides whether to show the Admin tab. The
+    // real protection against non-admins editing other players' data has
+    // to live in Firestore's own Security Rules, not here.
+    const ADMIN_EMAIL = "admin@gmail.com";
 
     const EGG_PRICE = 20;
     const DUPLICATE_REFUND = 5; // tunable: fraction of egg price refunded for a duplicate hatch
@@ -297,6 +328,9 @@
 
     requireAuth(async (user) => {
       currentUser = user;
+      if (user.email === ADMIN_EMAIL) {
+        document.getElementById("admin-tab-btn").style.display = "inline-block";
+      }
       await loadAll();
     });
 
@@ -313,6 +347,7 @@
       profile = await loadProfile(currentUser.uid);
       updateBalance();
       renderCollection();
+      await showPendingNotifications();
     }
 
     const DAILY_QUIZ_BONUS = 20; // flat bonus just for completing the daily quiz
@@ -344,11 +379,27 @@
       await setDoc(doc(db, "zooProfiles", currentUser.uid), profile);
     }
 
+    // The admin queues messages onto profile.pendingNotifications (see
+    // givePet/adjustPoints below). Show each one as a toast, then clear the
+    // list so they don't pop up again on the next visit.
+    async function showPendingNotifications() {
+      const notifications = profile.pendingNotifications || [];
+      if (notifications.length === 0) return;
+
+      for (const note of notifications) {
+        showToast(note.message);
+        await sleep(3500);
+      }
+
+      profile.pendingNotifications = [];
+      await saveProfile();
+    }
+
     const pointsBalanceEl = document.getElementById("points-balance");
     const buyEggBtn = document.getElementById("buy-egg-btn");
 
     function updateBalance() {
-      balance = totalQuizScore - profile.eggsBought * EGG_PRICE + profile.bonusRefunds;
+      balance = totalQuizScore - profile.eggsBought * EGG_PRICE + profile.bonusRefunds + (profile.adminAdjustment || 0);
       pointsBalanceEl.textContent = balance;
       buyEggBtn.disabled = balance < EGG_PRICE;
     }
@@ -363,6 +414,7 @@
         tabPanels.forEach((p) => (p.style.display = "none"));
         document.getElementById(btn.dataset.tab).style.display = "block";
         if (btn.dataset.tab === "others-tab") loadOthers();
+        if (btn.dataset.tab === "admin-tab") loadAdminPanel();
       });
     });
 
@@ -523,6 +575,154 @@
         section.appendChild(grid);
         othersList.appendChild(section);
       });
+    }
+
+    // ---------- Admin ----------
+    const adminList = document.getElementById("admin-list");
+
+    function animalNamesForTier(tier) {
+      if (tier === "common") return COMMON_ANIMALS;
+      if (tier === "epic") return EPIC_ANIMALS;
+      if (tier === "mythical") return MYTHICAL_ANIMALS;
+      return [];
+    }
+
+    function fillSelect(select, values) {
+      select.innerHTML = "";
+      values.forEach((value) => {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = value;
+        select.appendChild(opt);
+      });
+    }
+
+    async function loadAdminPanel() {
+      adminList.innerHTML = "Loading...";
+
+      const snapshot = await getDocs(collection(db, "zooProfiles"));
+      const players = [];
+      for (const d of snapshot.docs) {
+        const data = d.data();
+        const totalScore = await getTotalQuizScore(d.id);
+        const playerBalance = totalScore - (data.eggsBought || 0) * EGG_PRICE
+          + (data.bonusRefunds || 0) + (data.adminAdjustment || 0);
+        players.push({
+          uid: d.id,
+          email: data.email || "Unknown player",
+          balance: playerBalance,
+          animalCount: (data.animals || []).length
+        });
+      }
+      players.sort((a, b) => a.email.localeCompare(b.email));
+
+      adminList.innerHTML = "";
+      players.forEach((player) => adminList.appendChild(buildAdminCard(player)));
+    }
+
+    function buildAdminCard(player) {
+      const card = document.createElement("div");
+      card.className = "player-section admin-card";
+
+      const heading = document.createElement("h3");
+      heading.className = "player-heading";
+      heading.textContent = `${player.email} — Balance: ${player.balance} — ${player.animalCount} animal${player.animalCount === 1 ? "" : "s"}`;
+      card.appendChild(heading);
+
+      // Points row
+      const pointsRow = document.createElement("div");
+      pointsRow.className = "admin-row";
+      const pointsInput = document.createElement("input");
+      pointsInput.type = "number";
+      pointsInput.value = "10";
+      pointsInput.style.width = "70px";
+      const addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.textContent = "Add points";
+      const subBtn = document.createElement("button");
+      subBtn.type = "button";
+      subBtn.textContent = "Subtract points";
+      pointsRow.append("Points:", pointsInput, addBtn, subBtn);
+      card.appendChild(pointsRow);
+
+      addBtn.addEventListener("click", () => adjustPoints(player.uid, Number(pointsInput.value) || 0));
+      subBtn.addEventListener("click", () => adjustPoints(player.uid, -(Number(pointsInput.value) || 0)));
+
+      // Give-a-pet row
+      const petRow = document.createElement("div");
+      petRow.className = "admin-row";
+
+      const tierSelect = document.createElement("select");
+      fillSelect(tierSelect, ["common", "epic", "mythical", "exclusive"]);
+      Array.from(tierSelect.options).forEach((opt) => (opt.textContent = RARITY_LABELS[opt.value]));
+
+      const animalSelect = document.createElement("select");
+      const elementSelect = document.createElement("select");
+      fillSelect(elementSelect, ELEMENTS);
+      const speciesSelect = document.createElement("select");
+      fillSelect(speciesSelect, EXCLUSIVE_SPECIES);
+
+      function refreshPetPickers() {
+        const isExclusive = tierSelect.value === "exclusive";
+        animalSelect.style.display = isExclusive ? "none" : "inline-block";
+        elementSelect.style.display = isExclusive ? "inline-block" : "none";
+        speciesSelect.style.display = isExclusive ? "inline-block" : "none";
+        if (!isExclusive) fillSelect(animalSelect, animalNamesForTier(tierSelect.value));
+      }
+      tierSelect.addEventListener("change", refreshPetPickers);
+      refreshPetPickers();
+
+      const giveBtn = document.createElement("button");
+      giveBtn.type = "button";
+      giveBtn.textContent = "Give pet";
+      giveBtn.addEventListener("click", () => {
+        const tier = tierSelect.value;
+        const name = tier === "exclusive" ? `${elementSelect.value} ${speciesSelect.value}` : animalSelect.value;
+        givePet(player.uid, name, tier);
+      });
+
+      petRow.append("Give:", tierSelect, animalSelect, elementSelect, speciesSelect, giveBtn);
+      card.appendChild(petRow);
+
+      return card;
+    }
+
+    async function adjustPoints(uid, amount) {
+      if (!amount) return;
+      const message = amount > 0
+        ? `You received ${amount} points from the admin.`
+        : `The admin took away ${Math.abs(amount)} points.`;
+      await setDoc(doc(db, "zooProfiles", uid), {
+        adminAdjustment: increment(amount),
+        pendingNotifications: arrayUnion({ message, createdAt: Date.now() })
+      }, { merge: true });
+      showToast(`${amount > 0 ? "Added" : "Subtracted"} ${Math.abs(amount)} points.`);
+      loadAdminPanel();
+    }
+
+    async function givePet(uid, name, tier) {
+      // Same duplicate rule as buying an egg: if they already own this
+      // animal, refund bonus points instead of giving a second copy.
+      const snap = await getDoc(doc(db, "zooProfiles", uid));
+      const existingAnimals = snap.exists() ? (snap.data().animals || []) : [];
+      const isDuplicate = existingAnimals.some((a) => a.name === name);
+
+      if (isDuplicate) {
+        const message = `The admin tried to give you a duplicate ${name} — converted into +${DUPLICATE_REFUND} bonus points instead.`;
+        await setDoc(doc(db, "zooProfiles", uid), {
+          bonusRefunds: increment(DUPLICATE_REFUND),
+          pendingNotifications: arrayUnion({ message, createdAt: Date.now() })
+        }, { merge: true });
+        showToast(`${name} was a duplicate — converted to +${DUPLICATE_REFUND} points instead.`);
+      } else {
+        const message = `You received a new pet from the admin: ${name} (${RARITY_LABELS[tier]})!`;
+        await setDoc(doc(db, "zooProfiles", uid), {
+          animals: arrayUnion({ name, tier, hatchedAt: Date.now() }),
+          pendingNotifications: arrayUnion({ message, createdAt: Date.now() })
+        }, { merge: true });
+        showToast(`Gave ${name} (${RARITY_LABELS[tier]}).`);
+      }
+      loadAdminPanel();
     }
   </script>
 

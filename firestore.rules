@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == "admin@gmail.com";
+    }
+
+    // Every player's pet collection + points bookkeeping.
+    // Anyone signed in can read (needed for the "Other Players" tab),
+    // but you can only write your own doc — unless you're the admin.
+    match /zooProfiles/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == uid || isAdmin());
+    }
+
+    // Quiz results feed the points total. Players can only ever create a
+    // score row for themselves, and never edit or delete one afterwards.
+    match /quizScores/{scoreId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+  }
+}
