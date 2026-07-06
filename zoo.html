@@ -236,7 +236,15 @@
     .tier-mythical { border-color: #c62828; }
     .tier-mythical .card-name, .tier-mythical .card-rarity, .tier-mythical .reveal-rarity { color: #c62828; }
     .tier-exclusive {
-      border-image: linear-gradient(90deg, #ff3b3b, #ffa63b, #ffee3b, #3bff6b, #3bb0ff, #b03bff) 1;
+      /* border-image (used by other approaches) ignores border-radius, which
+         is why this needs a layered background trick instead: one opaque
+         layer painted only under the content (padding-box) to match the
+         card's own background, and the gradient painted only under the
+         border (border-box) so the rounded corners still show. */
+      border: 2px solid transparent;
+      background:
+        linear-gradient(#fafafa, #fafafa) padding-box,
+        linear-gradient(90deg, #ff3b3b, #ffa63b, #ffee3b, #3bff6b, #3bb0ff, #b03bff) border-box;
     }
     .tier-exclusive .card-name, .tier-exclusive .card-rarity, .tier-exclusive .reveal-rarity {
       background: linear-gradient(90deg, #ff3b3b, #ffa63b, #ffee3b, #3bff6b, #3bb0ff, #b03bff);
