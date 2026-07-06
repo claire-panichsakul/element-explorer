@@ -27,17 +27,24 @@
     .back-link:hover {
       text-decoration: underline;
     }
-    #leaderboard-table {
+    .leaderboard-section {
+      margin-bottom: 28px;
+    }
+    .leaderboard-section h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .leaderboard-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 14px;
     }
-    #leaderboard-table th, #leaderboard-table td {
+    .leaderboard-table th, .leaderboard-table td {
       text-align: left;
       padding: 10px 12px;
       border-bottom: 1px solid #ddd;
     }
-    #leaderboard-table th {
+    .leaderboard-table th {
       background: #f2f2f2;
     }
     .show-plays-btn {
@@ -104,22 +111,41 @@
       const scoresQuery = query(collection(db, "quizScores"), orderBy("timestamp", "desc"));
       const snapshot = await getDocs(scoresQuery);
 
-      // group attempts by who took the quiz; since the query is already
-      // newest-first, each person's attempts come out newest-first too
-      const byUser = new Map();
+      // group attempts by who took the quiz, split into practice vs. daily;
+      // since the query is already newest-first, each person's attempts
+      // come out newest-first too. Older records have no "type" field, so
+      // treat those as practice attempts.
+      const practiceByUser = new Map();
+      const dailyByUser = new Map();
       snapshot.forEach((doc) => {
         const attempt = doc.data();
+        const byUser = attempt.type === "daily" ? dailyByUser : practiceByUser;
         if (!byUser.has(attempt.email)) byUser.set(attempt.email, []);
         byUser.get(attempt.email).push(attempt);
       });
 
+      board.innerHTML = "";
+      board.appendChild(buildSection("Practice Quiz", practiceByUser));
+      board.appendChild(buildSection("Daily Quiz", dailyByUser));
+    }
+
+    function buildSection(title, byUser) {
+      const section = document.createElement("div");
+      section.className = "leaderboard-section";
+
+      const heading = document.createElement("h2");
+      heading.textContent = title;
+      section.appendChild(heading);
+
       if (byUser.size === 0) {
-        board.textContent = "No quiz attempts yet — go take the quiz!";
-        return;
+        const empty = document.createElement("p");
+        empty.textContent = "No attempts yet.";
+        section.appendChild(empty);
+        return section;
       }
 
       const table = document.createElement("table");
-      table.id = "leaderboard-table";
+      table.className = "leaderboard-table";
       table.innerHTML = `
         <thead>
           <tr>
@@ -168,8 +194,8 @@
       });
 
       table.appendChild(tbody);
-      board.innerHTML = "";
-      board.appendChild(table);
+      section.appendChild(table);
+      return section;
     }
   </script>
 
