@@ -625,7 +625,9 @@
 
         const grid = document.createElement("div");
         grid.className = "pet-grid";
-        player.animals.forEach((animal) => {
+        const rank = { exclusive: 3, mythical: 2, epic: 1, common: 0 };
+        const sortedAnimals = [...player.animals].sort((a, b) => rank[b.tier] - rank[a.tier]);
+        sortedAnimals.forEach((animal) => {
           const card = document.createElement("div");
           card.className = `collection-card tier-${animal.tier}`;
           card.innerHTML = `
