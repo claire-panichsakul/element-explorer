@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Egg Zoo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 720px;
+      margin: 40px auto;
+      color: #222;
+      padding: 0 16px;
+    }
+    h1 { margin-bottom: 4px; }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 18px;
+      color: #555;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover { text-decoration: underline; }
+    #logged-in-as {
+      font-size: 13px;
+      color: #666;
+      font-weight: normal;
+    }
+
+    #points-bar {
+      background: #fff3cd;
+      border: 1px solid #ffe08a;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 16px;
+    }
+    #points-balance { color: #8a6d00; }
+
+    #tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab-btn {
+      padding: 10px 16px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: #666;
+      border-bottom: 3px solid transparent;
+    }
+    .tab-btn.active {
+      color: #222;
+      font-weight: bold;
+      border-bottom: 3px solid #64b5f6;
+    }
+
+    #practice-quiz-link {
+      color: #64b5f6;
+    }
+    #buy-egg-btn {
+      margin-top: 16px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      border: none;
+      border-radius: 8px;
+      background: #64b5f6;
+      color: white;
+      cursor: pointer;
+    }
+    #buy-egg-btn:hover:not(:disabled) {
+      background: #4a9de8;
+    }
+    #buy-egg-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    #egg-stage {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .egg-card {
+      display: inline-block;
+      min-width: 200px;
+      padding: 24px;
+      border-radius: 14px;
+      border: 2px solid #ccc;
+      background: #fafafa;
+      font-size: 40px;
+    }
+    @keyframes eggShake {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-8deg); }
+      75% { transform: rotate(8deg); }
+    }
+    .egg-card.shaking { animation: eggShake 0.15s infinite; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .egg-card.reveal {
+      animation: fadeIn 0.4s ease;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .egg-card .reveal-rarity {
+      display: block;
+      font-size: 13px;
+      font-weight: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 6px;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #toast.visible { opacity: 1; }
+
+    #collection-controls {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 14px;
+      font-size: 14px;
+    }
+    #collection-controls select {
+      font-size: 14px;
+      padding: 4px 6px;
+    }
+    #collection-empty {
+      color: #666;
+      font-size: 14px;
+    }
+    #collection-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .collection-card {
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      padding: 12px;
+      background: #fafafa;
+      text-align: center;
+    }
+    .card-name { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
+    .card-rarity {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Rarity colors, shared by collection cards and the hatch reveal card */
+    .tier-common { border-color: #2e7d32; }
+    .tier-common .card-name, .tier-common .card-rarity, .tier-common .reveal-rarity { color: #2e7d32; }
+    .tier-epic { border-color: #1976d2; }
+    .tier-epic .card-name, .tier-epic .card-rarity, .tier-epic .reveal-rarity { color: #1976d2; }
+    .tier-mythical { border-color: #c62828; }
+    .tier-mythical .card-name, .tier-mythical .card-rarity, .tier-mythical .reveal-rarity { color: #c62828; }
+    .tier-exclusive {
+      border-image: linear-gradient(90deg, #ff3b3b, #ffa63b, #ffee3b, #3bff6b, #3bb0ff, #b03bff) 1;
+    }
+    .tier-exclusive .card-name, .tier-exclusive .card-rarity, .tier-exclusive .reveal-rarity {
+      background: linear-gradient(90deg, #ff3b3b, #ffa63b, #ffee3b, #3bff6b, #3bb0ff, #b03bff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="main-content" style="display: none;">
+
+    <a href="index.html" class="back-link">&larr; Back to Periodic Table</a>
+    <h1>Egg Zoo <span id="logged-in-as"></span></h1>
+
+    <div id="points-bar">Points: <span id="points-balance">0</span></div>
+
+    <div id="tabs">
+      <button class="tab-btn active" type="button" data-tab="hatch-tab">Hatch</button>
+      <button class="tab-btn" type="button" data-tab="collection-tab">Collection</button>
+    </div>
+
+    <div id="hatch-tab" class="tab-panel">
+      <p>Answer questions on the <a id="practice-quiz-link" href="quiz.html">Practice Quiz</a> to earn points, then come back here and spend them. Eggs cost 20 points and hatch the moment you buy them.</p>
+      <button id="buy-egg-btn" type="button">Buy Egg (20 points)</button>
+      <div id="egg-stage" style="display: none;">
+        <div id="egg-card" class="egg-card">🥚</div>
+      </div>
+    </div>
+
+    <div id="collection-tab" class="tab-panel" style="display: none;">
+      <div id="collection-controls">
+        <label>Filter:
+          <select id="filter-select">
+            <option value="all">All</option>
+            <option value="common">Common</option>
+            <option value="epic">Epic</option>
+            <option value="mythical">Mythical</option>
+            <option value="exclusive">Exclusive</option>
+          </select>
+        </label>
+        <label>Sort:
+          <select id="sort-select">
+            <option value="newest">Newest first</option>
+            <option value="rarity">Rarity (highest first)</option>
+            <option value="name">Name (A-Z)</option>
+          </select>
+        </label>
+      </div>
+      <p id="collection-empty" style="display: none;">No animals yet — buy an egg to get started!</p>
+      <div id="collection-grid"></div>
+    </div>
+
+  </div>
+
+  <div id="toast"></div>
+
+  <script type="module">
+    import { requireAuth } from "./auth-gate.js";
+    import { db } from "./firebase-init.js";
+    import {
+      collection,
+      getDocs,
+      query,
+      where,
+      doc,
+      getDoc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const EGG_PRICE = 20;
+    const DUPLICATE_REFUND = 5; // tunable: fraction of egg price refunded for a duplicate hatch
+
+    const COMMON_ANIMALS = ["Spotted Fox", "Striped Cat", "Fluffy Squirrel", "Spiky Hedgehog", "Slimy Snail"];
+    const EPIC_ANIMALS = ["Blazing Tiger", "Storm Hawk", "Void Panther", "Phantom Viper", "Glacier Walrus"];
+    const MYTHICAL_ANIMALS = ["Celestial Wyvern", "Void Serpent", "Ethereal Phoenix", "Volt Pegasus", "Cinder Cerberus"];
+    const EXCLUSIVE_SPECIES = ["Dog", "Horse", "Dragon", "Megalodon", "Falcon", "Scorpion", "Hamster", "Python", "Butterfly", "Jellyfish"];
+    const ELEMENTS = [
+      "Hydrogen", "Helium", "Lithium", "Beryllium", "Boron", "Carbon", "Nitrogen", "Oxygen", "Fluorine", "Neon",
+      "Sodium", "Magnesium", "Aluminum", "Silicon", "Phosphorus", "Sulfur", "Chlorine", "Argon", "Potassium", "Calcium",
+      "Scandium", "Titanium", "Vanadium", "Chromium", "Manganese", "Iron", "Cobalt", "Nickel", "Copper", "Zinc",
+      "Gallium", "Germanium", "Arsenic", "Selenium", "Bromine", "Krypton", "Rubidium", "Strontium", "Yttrium", "Zirconium",
+      "Niobium", "Molybdenum", "Technetium", "Ruthenium", "Rhodium", "Palladium", "Silver", "Cadmium", "Indium", "Tin",
+      "Antimony", "Tellurium", "Iodine", "Xenon", "Cesium", "Barium", "Lanthanum", "Cerium", "Praseodymium", "Neodymium",
+      "Promethium", "Samarium", "Europium", "Gadolinium", "Terbium", "Dysprosium", "Holmium", "Erbium", "Thulium", "Ytterbium",
+      "Lutetium", "Hafnium", "Tantalum", "Tungsten", "Rhenium", "Osmium", "Iridium", "Platinum", "Gold", "Mercury",
+      "Thallium", "Lead", "Bismuth", "Polonium", "Astatine", "Radon", "Francium", "Radium", "Actinium", "Thorium",
+      "Protactinium", "Uranium", "Neptunium", "Plutonium", "Americium", "Curium", "Berkelium", "Californium", "Einsteinium", "Fermium",
+      "Mendelevium", "Nobelium", "Lawrencium", "Rutherfordium", "Dubnium", "Seaborgium", "Bohrium", "Hassium", "Meitnerium", "Darmstadtium",
+      "Roentgenium", "Copernicium", "Nihonium", "Flerovium", "Moscovium", "Livermorium", "Tennessine", "Oganesson"
+    ];
+
+    const RARITY_LABELS = { common: "Common", epic: "Epic", mythical: "Mythical", exclusive: "Exclusive" };
+
+    let currentUser = null;
+    let totalQuizScore = 0;
+    let profile = { eggsBought: 0, bonusRefunds: 0, animals: [] };
+    let balance = 0;
+
+    requireAuth(async (user) => {
+      currentUser = user;
+      await loadAll();
+    });
+
+    // Browsers sometimes restore this page from a "back/forward cache" snapshot
+    // when you hit the back button, instead of re-running the page's code. That
+    // snapshot would still show your old points total, so re-check Firebase
+    // every time the page is shown, not just on the very first load.
+    window.addEventListener("pageshow", () => {
+      if (currentUser) loadAll();
+    });
+
+    async function loadAll() {
+      totalQuizScore = await getTotalQuizScore(currentUser.uid);
+      profile = await loadProfile(currentUser.uid);
+      updateBalance();
+      renderCollection();
+    }
+
+    const DAILY_QUIZ_BONUS = 20; // flat bonus just for completing the daily quiz
+
+    async function getTotalQuizScore(uid) {
+      const scoresQuery = query(collection(db, "quizScores"), where("uid", "==", uid));
+      const snapshot = await getDocs(scoresQuery);
+      let total = 0;
+      snapshot.forEach((d) => {
+        const attempt = d.data();
+        if (attempt.type === "daily") {
+          total += (attempt.score || 0) * 2 + DAILY_QUIZ_BONUS;
+        } else {
+          total += (attempt.score || 0);
+        }
+      });
+      return total;
+    }
+
+    async function loadProfile(uid) {
+      const snap = await getDoc(doc(db, "zooProfiles", uid));
+      return snap.exists() ? snap.data() : { eggsBought: 0, bonusRefunds: 0, animals: [] };
+    }
+
+    async function saveProfile() {
+      await setDoc(doc(db, "zooProfiles", currentUser.uid), profile);
+    }
+
+    const pointsBalanceEl = document.getElementById("points-balance");
+    const buyEggBtn = document.getElementById("buy-egg-btn");
+
+    function updateBalance() {
+      balance = totalQuizScore - profile.eggsBought * EGG_PRICE + profile.bonusRefunds;
+      pointsBalanceEl.textContent = balance;
+      buyEggBtn.disabled = balance < EGG_PRICE;
+    }
+
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabPanels = document.querySelectorAll(".tab-panel");
+    tabButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        tabButtons.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        tabPanels.forEach((p) => (p.style.display = "none"));
+        document.getElementById(btn.dataset.tab).style.display = "block";
+      });
+    });
+
+    // ---------- Hatch ----------
+    const eggStage = document.getElementById("egg-stage");
+    const eggCard = document.getElementById("egg-card");
+    const toast = document.getElementById("toast");
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function rollTier() {
+      const r = Math.random() * 100;
+      if (r < 60) return "common";
+      if (r < 88) return "epic";
+      if (r < 98) return "mythical";
+      return "exclusive";
+    }
+
+    function generateAnimal(tier) {
+      if (tier === "common") return pick(COMMON_ANIMALS);
+      if (tier === "epic") return pick(EPIC_ANIMALS);
+      if (tier === "mythical") return pick(MYTHICAL_ANIMALS);
+      return `${pick(ELEMENTS)} ${pick(EXCLUSIVE_SPECIES)}`;
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 3000);
+    }
+
+    buyEggBtn.addEventListener("click", async () => {
+      if (balance < EGG_PRICE) return;
+      buyEggBtn.disabled = true;
+
+      eggStage.style.display = "block";
+      eggCard.className = "egg-card shaking";
+      eggCard.textContent = "🥚";
+      await sleep(700);
+
+      const tier = rollTier();
+      const animalName = generateAnimal(tier);
+      const isDuplicate = profile.animals.some((a) => a.name === animalName);
+
+      profile.eggsBought++;
+      if (isDuplicate) {
+        profile.bonusRefunds += DUPLICATE_REFUND;
+        showToast(`Duplicate ${animalName}! Converted into +${DUPLICATE_REFUND} bonus points.`);
+      } else {
+        profile.animals.push({ name: animalName, tier, hatchedAt: Date.now() });
+        showToast(`A new ${RARITY_LABELS[tier]} animal arrived!`);
+      }
+      await saveProfile();
+
+      eggCard.className = `egg-card reveal tier-${tier}`;
+      eggCard.innerHTML = `${animalName}<span class="reveal-rarity">${RARITY_LABELS[tier]}</span>`;
+
+      updateBalance();
+      renderCollection();
+    });
+
+    // ---------- Collection ----------
+    const filterSelect = document.getElementById("filter-select");
+    const sortSelect = document.getElementById("sort-select");
+    const collectionEmpty = document.getElementById("collection-empty");
+    const collectionGrid = document.getElementById("collection-grid");
+
+    function renderCollection() {
+      let list = profile.animals.slice();
+
+      const filter = filterSelect.value;
+      if (filter !== "all") list = list.filter((a) => a.tier === filter);
+
+      const sort = sortSelect.value;
+      if (sort === "newest") {
+        list.sort((a, b) => b.hatchedAt - a.hatchedAt);
+      } else if (sort === "rarity") {
+        const rank = { exclusive: 3, mythical: 2, epic: 1, common: 0 };
+        list.sort((a, b) => rank[b.tier] - rank[a.tier]);
+      } else if (sort === "name") {
+        list.sort((a, b) => a.name.localeCompare(b.name));
+      }
+
+      collectionEmpty.style.display = list.length === 0 ? "block" : "none";
+      collectionGrid.innerHTML = "";
+      list.forEach((animal) => {
+        const card = document.createElement("div");
+        card.className = `collection-card tier-${animal.tier}`;
+        card.innerHTML = `
+          <div class="card-name">${animal.name}</div>
+          <div class="card-rarity">${RARITY_LABELS[animal.tier]}</div>
+        `;
+        collectionGrid.appendChild(card);
+      });
+    }
+
+    filterSelect.addEventListener("change", renderCollection);
+    sortSelect.addEventListener("change", renderCollection);
+  </script>
+
+</body>
+</html>
