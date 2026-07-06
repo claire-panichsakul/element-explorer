@@ -323,7 +323,7 @@
         <label>Sort:
           <select id="sort-select">
             <option value="newest">Newest first</option>
-            <option value="rarity">Rarity (highest first)</option>
+            <option value="rarity" selected>Rarity (highest first)</option>
             <option value="name">Name (A-Z)</option>
           </select>
         </label>
@@ -454,13 +454,65 @@
 
     const dailyRewardText = document.getElementById("daily-reward-text");
     const claimRewardBtn = document.getElementById("claim-reward-btn");
+    let dailyRewardCountdownTimer = null;
+
+    // Denver's UTC offset (in minutes) shifts by an hour across the DST
+    // switch, so it has to be read fresh rather than hardcoded.
+    function getDenverOffsetMinutes(date) {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Denver",
+        timeZoneName: "shortOffset"
+      }).formatToParts(date);
+      const offsetPart = parts.find((p) => p.type === "timeZoneName").value; // e.g. "GMT-6"
+      const match = offsetPart.match(/GMT([+-]\d+)/);
+      return match ? Number(match[1]) * 60 : 0;
+    }
+
+    // The next real-world instant the reward resets: today's (or tomorrow's)
+    // 7am Mountain Time, converted to an actual UTC instant.
+    function getNextResetTime() {
+      const now = new Date();
+      const offsetMinutes = getDenverOffsetMinutes(now);
+      const denverNow = new Date(now.getTime() + offsetMinutes * 60000);
+      const denverReset = new Date(Date.UTC(
+        denverNow.getUTCFullYear(), denverNow.getUTCMonth(), denverNow.getUTCDate(), 7, 0, 0
+      ));
+      if (denverNow >= denverReset) {
+        denverReset.setUTCDate(denverReset.getUTCDate() + 1);
+      }
+      return new Date(denverReset.getTime() - offsetMinutes * 60000);
+    }
+
+    function formatCountdown(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+      const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return `${hours}:${minutes}:${seconds}`;
+    }
 
     function updateDailyRewardUI() {
+      clearInterval(dailyRewardCountdownTimer);
       const alreadyClaimed = profile.lastLoginRewardDay === getRewardDayId();
-      dailyRewardText.textContent = alreadyClaimed
-        ? "You've claimed today's login reward — come back after 7am Mountain Time tomorrow!"
-        : "Your daily login reward is ready!";
-      claimRewardBtn.style.display = alreadyClaimed ? "none" : "inline-block";
+
+      if (!alreadyClaimed) {
+        dailyRewardText.textContent = "Your daily login reward is ready!";
+        claimRewardBtn.style.display = "inline-block";
+        return;
+      }
+
+      claimRewardBtn.style.display = "none";
+      const tick = () => {
+        const msLeft = getNextResetTime() - Date.now();
+        if (msLeft <= 0) {
+          updateDailyRewardUI(); // the reset moment just passed — flip back to claimable
+          return;
+        }
+        dailyRewardText.textContent =
+          `You've claimed today's login reward — refreshes in ${formatCountdown(msLeft)} (7am Mountain Time).`;
+      };
+      tick();
+      dailyRewardCountdownTimer = setInterval(tick, 1000);
     }
 
     claimRewardBtn.addEventListener("click", async () => {
