@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Egg Zoo</title>
+  <title>Pet Collection</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -149,10 +149,21 @@
       color: #666;
       font-size: 14px;
     }
-    #collection-grid {
+    #collection-grid, .pet-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 10px;
+    }
+    .player-section {
+      margin-bottom: 24px;
+    }
+    .player-heading {
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+    #others-empty {
+      color: #666;
+      font-size: 14px;
     }
     .collection-card {
       border: 2px solid #ccc;
@@ -192,13 +203,14 @@
   <div id="main-content" style="display: none;">
 
     <a href="index.html" class="back-link">&larr; Back to Periodic Table</a>
-    <h1>Egg Zoo <span id="logged-in-as"></span></h1>
+    <h1>Pet Collection <span id="logged-in-as"></span></h1>
 
     <div id="points-bar">Points: <span id="points-balance">0</span></div>
 
     <div id="tabs">
       <button class="tab-btn active" type="button" data-tab="hatch-tab">Hatch</button>
       <button class="tab-btn" type="button" data-tab="collection-tab">Collection</button>
+      <button class="tab-btn" type="button" data-tab="others-tab">Other Players</button>
     </div>
 
     <div id="hatch-tab" class="tab-panel">
@@ -229,7 +241,12 @@
         </label>
       </div>
       <p id="collection-empty" style="display: none;">No animals yet — buy an egg to get started!</p>
-      <div id="collection-grid"></div>
+      <div id="collection-grid" class="pet-grid"></div>
+    </div>
+
+    <div id="others-tab" class="tab-panel" style="display: none;">
+      <p id="others-empty" style="display: none;">No other players have hatched any pets yet.</p>
+      <div id="others-list"></div>
     </div>
 
   </div>
@@ -321,6 +338,9 @@
     }
 
     async function saveProfile() {
+      // Store email alongside the profile so the "Other Players" tab has
+      // something friendlier than a raw user id to show for each collection.
+      profile.email = currentUser.email;
       await setDoc(doc(db, "zooProfiles", currentUser.uid), profile);
     }
 
@@ -342,6 +362,7 @@
         btn.classList.add("active");
         tabPanels.forEach((p) => (p.style.display = "none"));
         document.getElementById(btn.dataset.tab).style.display = "block";
+        if (btn.dataset.tab === "others-tab") loadOthers();
       });
     });
 
@@ -446,6 +467,63 @@
 
     filterSelect.addEventListener("change", renderCollection);
     sortSelect.addEventListener("change", renderCollection);
+
+    // ---------- Other Players ----------
+    const othersEmpty = document.getElementById("others-empty");
+    const othersList = document.getElementById("others-list");
+
+    async function loadOthers() {
+      othersEmpty.style.display = "none";
+      othersList.innerHTML = "Loading...";
+
+      let snapshot;
+      try {
+        snapshot = await getDocs(collection(db, "zooProfiles"));
+      } catch (err) {
+        othersList.innerHTML = `Couldn't load other players: ${err.message}`;
+        return;
+      }
+
+      const others = [];
+      snapshot.forEach((d) => {
+        if (d.id === currentUser.uid) return;
+        const data = d.data();
+        if (data.animals && data.animals.length > 0) {
+          others.push({ email: data.email || "Unknown player", animals: data.animals });
+        }
+      });
+      others.sort((a, b) => a.email.localeCompare(b.email));
+
+      othersList.innerHTML = "";
+      if (others.length === 0) {
+        othersEmpty.style.display = "block";
+        return;
+      }
+
+      others.forEach((player) => {
+        const section = document.createElement("div");
+        section.className = "player-section";
+
+        const heading = document.createElement("h3");
+        heading.className = "player-heading";
+        heading.textContent = `${player.email} — ${player.animals.length} animal${player.animals.length === 1 ? "" : "s"}`;
+        section.appendChild(heading);
+
+        const grid = document.createElement("div");
+        grid.className = "pet-grid";
+        player.animals.forEach((animal) => {
+          const card = document.createElement("div");
+          card.className = `collection-card tier-${animal.tier}`;
+          card.innerHTML = `
+            <div class="card-name">${animal.name}</div>
+            <div class="card-rarity">${RARITY_LABELS[animal.tier]}</div>
+          `;
+          grid.appendChild(card);
+        });
+        section.appendChild(grid);
+        othersList.appendChild(section);
+      });
+    }
   </script>
 
 </body>
