@@ -278,6 +278,20 @@
       color: transparent;
       font-weight: bold;
     }
+
+    /* Hatch chances list on the Hatch tab (text colors only, no borders) */
+    #hatch-chances-list { padding-left: 20px; font-size: 14px; }
+    #hatch-chances-list li { margin-bottom: 4px; }
+    .rarity-common { color: #2e7d32; font-weight: bold; }
+    .rarity-epic { color: #1976d2; font-weight: bold; }
+    .rarity-mythical { color: #c62828; font-weight: bold; }
+    .rarity-exclusive {
+      background: linear-gradient(90deg, #ff3b3b, #ffa63b, #ffee3b, #3bff6b, #3bb0ff, #b03bff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -304,6 +318,8 @@
     <div id="hatch-tab" class="tab-panel">
       <p>Answer questions on the <a id="practice-quiz-link" href="quiz.html">Practice Quiz</a> to earn points, then come back here and spend them. Eggs cost 20 points and hatch the moment you buy them.</p>
       <button id="buy-egg-btn" type="button">Buy Egg (20 points)</button>
+      <p>Hatch chances:</p>
+      <ul id="hatch-chances-list"></ul>
       <div id="egg-stage" style="display: none;">
         <div id="egg-card" class="egg-card">🥚</div>
       </div>
@@ -395,6 +411,13 @@
     ];
 
     const RARITY_LABELS = { common: "Common", epic: "Epic", mythical: "Mythical", exclusive: "Exclusive" };
+    // Percent chance of each tier when hatching an egg. Must add up to 100.
+    const RARITY_CHANCES = { common: 60, epic: 28, mythical: 10, exclusive: 2 };
+
+    const hatchChancesList = document.getElementById("hatch-chances-list");
+    hatchChancesList.innerHTML = Object.keys(RARITY_LABELS)
+      .map((tier) => `<li><span class="rarity-${tier}">${RARITY_LABELS[tier]}</span>: ${RARITY_CHANCES[tier]}%</li>`)
+      .join("");
 
     let currentUser = null;
     let totalQuizScore = 0;
@@ -607,9 +630,9 @@
 
     function rollTier() {
       const r = Math.random() * 100;
-      if (r < 60) return "common";
-      if (r < 88) return "epic";
-      if (r < 98) return "mythical";
+      if (r < RARITY_CHANCES.common) return "common";
+      if (r < RARITY_CHANCES.common + RARITY_CHANCES.epic) return "epic";
+      if (r < RARITY_CHANCES.common + RARITY_CHANCES.epic + RARITY_CHANCES.mythical) return "mythical";
       return "exclusive";
     }
 
