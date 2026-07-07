@@ -476,11 +476,11 @@
     <div class="temp-slider-wrapper">
       <label>
         <input type="checkbox" id="temp-mode-toggle">
-        🌡️ Color by temperature
+        🌡️ States of matter by temperature
       </label>
       <br>
       <label for="temp-slider">Temperature: <span id="temp-label"></span></label>
-      <input type="range" id="temp-slider" min="0" max="6000" value="293" step="1">
+      <input type="range" id="temp-slider" min="0" max="6000" value="298" step="1">
       <select id="temp-unit">
         <option value="C" selected>°C</option>
         <option value="F">°F</option>
@@ -1716,7 +1716,7 @@
     const tempLabel = document.getElementById("temp-label");
     const tempReset = document.getElementById("temp-reset");
     const tempLegend = document.getElementById("temp-legend");
-    const ROOM_TEMP_KELVIN = 293;
+    const ROOM_TEMP_KELVIN = 298;
 
     function kelvinToDisplay(kelvin, unit) {
       if (unit === "C") return Math.round(kelvin - 273.15) + "°C";
