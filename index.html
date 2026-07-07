@@ -113,6 +113,12 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .legend-item.active {
+      font-weight: bold;
+      text-decoration: underline;
     }
     .legend-swatch {
       width: 14px;
@@ -1589,47 +1595,47 @@
     </div>
 
     <div class="legend">
-    <div class="legend-item">
+    <div class="legend-item" data-category="alkali-metal">
       <span class="legend-swatch" style="background-color: #ff8a65;"></span>
       <span>Alkali Metal</span>
     </div>
-    <div class="legend-item">
+    <div class="legend-item" data-category="alkaline-earth">
       <span class="legend-swatch" style="background-color: #ffd54f;"></span>
       <span>Alkaline Earth Metal</span>
     </div>
-    <div class="legend-item">
+    <div class="legend-item" data-category="transition-metal">
       <span class="legend-swatch" style="background-color: #64b5f6;"></span>
       <span>Transition Metal</span>
     </div>
-    <div class="legend-item">
+    <div class="legend-item" data-category="post-transition-metal">
       <span class="legend-swatch" style="background-color: #a1887f;"></span>
       <span>Post-transition Metal</span>
     </div>
-    <div class="legend-item">
+    <div class="legend-item" data-category="metalloid">
       <span class="legend-swatch" style="background-color: #4db6ac;"></span>
       <span>Metalloid</span>
     </div>
-    <div class="legend-item">
+    <div class="legend-item" data-category="nonmetal">
       <span class="legend-swatch" style="background-color: #81c784;"></span>
       <span>Nonmetal</span>
     </div>
-    <div class="legend-item">
+    <div class="legend-item" data-category="halogen">
       <span class="legend-swatch" style="background-color: #cddc39;"></span>
       <span>Halogen</span>
     </div>
-    <div class="legend-item">
+    <div class="legend-item" data-category="noble-gas">
       <span class="legend-swatch" style="background-color: #ba68c8;"></span>
       <span>Noble Gas</span>
     </div>
-    <div class="legend-item">
+    <div class="legend-item" data-category="lanthanide">
       <span class="legend-swatch" style="background-color: #f06292;"></span>
       <span>Lanthanide</span>
     </div>
-    <div class="legend-item">
+    <div class="legend-item" data-category="actinide">
       <span class="legend-swatch" style="background-color: #e57373;"></span>
       <span>Actinide</span>
     </div>
-    <div class="legend-item">
+    <div class="legend-item" data-category="unknown">
       <span class="legend-swatch" style="background-color: #616161;"></span>
       <span>Unknown / Predicted</span>
     </div>
@@ -1792,6 +1798,28 @@
       searchBox.value = "";
       searchBox.dispatchEvent(new Event("input"));
       searchBox.focus();
+    });
+
+    // clicking a family in the legend shows just that family and dims the rest;
+    // clicking the same family again turns the filter back off
+    const legendItems = document.querySelectorAll(".legend-item");
+    let activeCategory = null;
+
+    legendItems.forEach(item => {
+      item.addEventListener("click", () => {
+        const category = item.dataset.category;
+        activeCategory = activeCategory === category ? null : category;
+
+        legendItems.forEach(li => li.classList.toggle("active", li.dataset.category === activeCategory));
+
+        tiles.forEach(tile => {
+          if (activeCategory === null) {
+            tile.classList.remove("dimmed");
+            return;
+          }
+          tile.classList.toggle("dimmed", !tile.classList.contains(activeCategory));
+        });
+      });
     });
 
     document.querySelectorAll(".element-tile.placeholder").forEach(placeholder => {
