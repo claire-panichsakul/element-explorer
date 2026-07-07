@@ -167,7 +167,7 @@
           <td>${email}</td>
           <td>${best.score} / ${best.total}</td>
           <td>${attempts.length}</td>
-          <td><button type="button" class="show-plays-btn">Show all plays</button></td>
+          <td><button type="button" class="show-plays-btn">Show recent attempts</button></td>
         `;
 
         const playsRow = document.createElement("tr");
@@ -175,7 +175,7 @@
         const playsCell = document.createElement("td");
         playsCell.colSpan = 4;
         const list = document.createElement("ul");
-        attempts.forEach((attempt) => {
+        attempts.slice(0, 3).forEach((attempt) => {
           const li = document.createElement("li");
           const when = attempt.timestamp ? attempt.timestamp.toDate().toLocaleString() : "just now";
           li.textContent = `${attempt.score} / ${attempt.total} — ${when}`;
@@ -187,7 +187,7 @@
         const showPlaysBtn = row.querySelector(".show-plays-btn");
         showPlaysBtn.addEventListener("click", () => {
           const isVisible = playsRow.classList.toggle("visible");
-          showPlaysBtn.textContent = isVisible ? "Hide plays" : "Show all plays";
+          showPlaysBtn.textContent = isVisible ? "Hide attempts" : "Show recent attempts";
         });
 
         tbody.appendChild(row);
