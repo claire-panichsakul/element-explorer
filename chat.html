@@ -100,7 +100,7 @@
 
   <div id="main-content" style="display: none;">
 
-    <a href="index.html" class="back-link">&larr; Back to Periodic Table</a>
+    <a href="index.html" id="back-link" class="back-link">&larr; Back to Periodic Table</a>
     <h1>Chat <span id="logged-in-as"></span></h1>
 
     <div id="chat-messages"></div>
@@ -139,6 +139,11 @@
       const messagesEl = document.getElementById("chat-messages");
       const form = document.getElementById("chat-form");
       const input = document.getElementById("chat-input");
+      const backLink = document.getElementById("back-link");
+
+      // Tracks the most recent "mark as read" write, so the back link
+      // can wait for it to finish before actually leaving the page.
+      let markAsReadPromise = Promise.resolve();
 
       const recentMessagesQuery = query(
         collection(db, "chatMessages"),
@@ -156,7 +161,17 @@
         messages.forEach((message) => messagesEl.appendChild(buildBubble(message, user)));
         messagesEl.scrollTop = messagesEl.scrollHeight;
 
-        markAsRead(user);
+        markAsReadPromise = markAsRead(user);
+      });
+
+      // Without this, clicking away right after reading could navigate
+      // off the page before the "read" write above actually reaches
+      // Firestore — leaving the unread badge stuck on the old count.
+      backLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        markAsReadPromise.finally(() => {
+          window.location.href = backLink.href;
+        });
       });
 
       form.addEventListener("submit", async (event) => {
@@ -200,7 +215,7 @@
     // Records "you've seen everything up to right now" so the unread
     // badge on the Chat button knows nothing new is waiting.
     function markAsRead(user) {
-      setDoc(doc(db, "chatReadState", user.uid), { lastReadAt: serverTimestamp() });
+      return setDoc(doc(db, "chatReadState", user.uid), { lastReadAt: serverTimestamp() });
     }
 
     // Keeps the collection down to the 50 newest messages by deleting
