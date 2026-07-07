@@ -120,6 +120,7 @@
       addDoc,
       deleteDoc,
       doc,
+      setDoc,
       onSnapshot,
       getDocs,
       query,
@@ -154,6 +155,8 @@
         messagesEl.innerHTML = "";
         messages.forEach((message) => messagesEl.appendChild(buildBubble(message, user)));
         messagesEl.scrollTop = messagesEl.scrollHeight;
+
+        markAsRead(user);
       });
 
       form.addEventListener("submit", async (event) => {
@@ -192,6 +195,12 @@
 
       bubble.append(sender, text, time);
       return bubble;
+    }
+
+    // Records "you've seen everything up to right now" so the unread
+    // badge on the Chat button knows nothing new is waiting.
+    function markAsRead(user) {
+      setDoc(doc(db, "chatReadState", user.uid), { lastReadAt: serverTimestamp() });
     }
 
     // Keeps the collection down to the 50 newest messages by deleting

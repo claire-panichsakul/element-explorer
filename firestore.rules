@@ -31,5 +31,11 @@ service cloud.firestore {
       allow delete: if request.auth != null;
       allow update: if false;
     }
+
+    // Tracks when each player last looked at the chat, so the unread
+    // badge knows what's new. Private to that player.
+    match /chatReadState/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
   }
 }
