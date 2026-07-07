@@ -110,6 +110,10 @@
     #egg-stage {
       text-align: center;
       margin-top: 20px;
+      transition: opacity 0.6s ease;
+    }
+    #egg-stage.fading {
+      opacity: 0;
     }
     .egg-card {
       display: inline-block;
@@ -619,6 +623,7 @@
     const eggStage = document.getElementById("egg-stage");
     const eggCard = document.getElementById("egg-card");
     const toast = document.getElementById("toast");
+    let eggHideTimer = null;
 
     function sleep(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
@@ -670,6 +675,8 @@
       if (balance < EGG_PRICE) return;
       buyEggBtn.disabled = true;
 
+      clearTimeout(eggHideTimer);
+      eggStage.classList.remove("fading");
       eggStage.style.display = "block";
       eggCard.className = "egg-card shaking";
       eggCard.textContent = "🥚";
@@ -694,6 +701,14 @@
 
       updateBalance();
       renderCollection();
+
+      eggHideTimer = setTimeout(() => {
+        eggStage.classList.add("fading");
+        eggHideTimer = setTimeout(() => {
+          eggStage.style.display = "none";
+          eggStage.classList.remove("fading");
+        }, 600);
+      }, 3000);
     });
 
     // ---------- Collection ----------
