@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 560px;
+      margin: 40px auto;
+      color: #222;
+      padding: 0 16px;
+    }
+    h1 {
+      margin-bottom: 4px;
+    }
+    .back-link {
+      display: block;
+      margin-bottom: 18px;
+      color: #555;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    #logged-in-as {
+      font-size: 13px;
+      color: #666;
+      font-weight: normal;
+    }
+    #chat-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      background: #f9f9f9;
+    }
+    .chat-bubble {
+      display: flex;
+      flex-direction: column;
+      align-self: flex-start;
+      max-width: 75%;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 6px 10px;
+    }
+    .chat-bubble.own {
+      align-self: flex-end;
+      background: #e1f5f2;
+      border-color: #b2dfdb;
+    }
+    .chat-sender {
+      font-size: 12px;
+      font-weight: bold;
+      color: #26a69a;
+    }
+    .chat-text {
+      font-size: 14px;
+      word-wrap: break-word;
+    }
+    .chat-time {
+      align-self: flex-end;
+      font-size: 10px;
+      color: #999;
+    }
+    #chat-form {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    #chat-input {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 14px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+    }
+    #chat-form button {
+      padding: 8px 16px;
+      font-size: 14px;
+      color: white;
+      background: #26a69a;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #chat-form button:hover {
+      background: #1e8e82;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="main-content" style="display: none;">
+
+    <a href="index.html" class="back-link">&larr; Back to Periodic Table</a>
+    <h1>Chat <span id="logged-in-as"></span></h1>
+
+    <div id="chat-messages"></div>
+
+    <form id="chat-form">
+      <input type="text" id="chat-input" placeholder="Say something..." autocomplete="off" required>
+      <button type="submit">Send</button>
+    </form>
+
+  </div>
+
+  <script type="module">
+    import { requireAuth } from "./auth-gate.js";
+    import { db } from "./firebase-init.js";
+    import {
+      collection,
+      addDoc,
+      deleteDoc,
+      doc,
+      onSnapshot,
+      getDocs,
+      query,
+      orderBy,
+      limit,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    // Only this many messages are kept around; older ones get deleted
+    // right after a new one is sent (see trimOldMessages below).
+    const MAX_MESSAGES = 50;
+
+    requireAuth(startChat);
+
+    function startChat(user) {
+      const messagesEl = document.getElementById("chat-messages");
+      const form = document.getElementById("chat-form");
+      const input = document.getElementById("chat-input");
+
+      const recentMessagesQuery = query(
+        collection(db, "chatMessages"),
+        orderBy("timestamp", "desc"),
+        limit(MAX_MESSAGES)
+      );
+
+      // Fires immediately with what's there now, then again every time
+      // someone sends a new message — that's what makes the chat live.
+      onSnapshot(recentMessagesQuery, (snapshot) => {
+        const messages = snapshot.docs.map((docSnap) => docSnap.data());
+        messages.reverse(); // oldest first, so it reads top to bottom
+
+        messagesEl.innerHTML = "";
+        messages.forEach((message) => messagesEl.appendChild(buildBubble(message, user)));
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+
+        await addDoc(collection(db, "chatMessages"), {
+          email: user.email,
+          text,
+          timestamp: serverTimestamp()
+        });
+
+        trimOldMessages();
+      });
+    }
+
+    function buildBubble(message, user) {
+      const bubble = document.createElement("div");
+      bubble.className = "chat-bubble" + (message.email === user.email ? " own" : "");
+
+      const sender = document.createElement("div");
+      sender.className = "chat-sender";
+      sender.textContent = message.email;
+
+      const text = document.createElement("div");
+      text.className = "chat-text";
+      text.textContent = message.text;
+
+      const time = document.createElement("div");
+      time.className = "chat-time";
+      time.textContent = message.timestamp
+        ? message.timestamp.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "sending...";
+
+      bubble.append(sender, text, time);
+      return bubble;
+    }
+
+    // Keeps the collection down to the 50 newest messages by deleting
+    // anything older than that.
+    async function trimOldMessages() {
+      const allMessagesQuery = query(collection(db, "chatMessages"), orderBy("timestamp", "desc"));
+      const snapshot = await getDocs(allMessagesQuery);
+      const extraDocs = snapshot.docs.slice(MAX_MESSAGES);
+      await Promise.all(extraDocs.map((docSnap) => deleteDoc(doc(db, "chatMessages", docSnap.id))));
+    }
+  </script>
+
+</body>
+</html>
