@@ -107,6 +107,12 @@
       margin-top: 10px;
       color: #64b5f6;
     }
+    #multiplier-banner {
+      font-size: 13px;
+      font-weight: bold;
+      color: #8a6d00;
+      margin: 0 0 10px;
+    }
   </style>
 </head>
 <body>
@@ -123,6 +129,7 @@
 
   <div id="quiz-screen" style="display: none;">
     <button id="thai-toggle-btn" type="button">Translate to Thai</button>
+    <p id="multiplier-banner" style="display: none;">⚡ 2x points active for this round!</p>
     <div id="progress"></div>
     <div id="question-box">
       <p id="question-text"></p>
@@ -147,12 +154,24 @@
     import {
       collection,
       addDoc,
+      doc,
+      getDoc,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
     import { PRACTICE_QUESTIONS as QUESTIONS } from "./quiz-data.js";
 
     let currentUser = null;
+    let roundMultiplierActive = false; // set at the start of each round, see checkWheelMultiplier()
     requireAuth((user) => { currentUser = user; });
+
+    // Checks whether the player currently has an active 2x-points reward from
+    // the Spin the Wheel feature on the Pet Collection page.
+    async function checkWheelMultiplier() {
+      if (!currentUser) return false;
+      const snap = await getDoc(doc(db, "zooProfiles", currentUser.uid));
+      const expiresAt = snap.exists() ? (snap.data().wheelMultiplierExpiresAt || 0) : 0;
+      return expiresAt > Date.now();
+    }
 
     const ROUND_SIZE = 10;
 
@@ -166,6 +185,7 @@
     const nextBtn = document.getElementById("next-btn");
     const scoreText = document.getElementById("score-text");
     const thaiToggleBtn = document.getElementById("thai-toggle-btn");
+    const multiplierBanner = document.getElementById("multiplier-banner");
 
     let round = [];
     let currentIndex = 0;
@@ -199,13 +219,15 @@
       return copy;
     }
 
-    function startRound() {
+    async function startRound() {
+      roundMultiplierActive = await checkWheelMultiplier();
       round = shuffle(QUESTIONS).slice(0, ROUND_SIZE);
       currentIndex = 0;
       score = 0;
       introScreen.style.display = "none";
       endScreen.style.display = "none";
       quizScreen.style.display = "block";
+      multiplierBanner.style.display = roundMultiplierActive ? "block" : "none";
       showQuestion();
     }
 
@@ -276,6 +298,7 @@
         score,
         total,
         type: "practice",
+        multiplierActive: roundMultiplierActive,
         timestamp: serverTimestamp()
       });
     }
