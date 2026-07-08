@@ -113,6 +113,11 @@
     }
     #spin-wheel-btn:hover:not(:disabled) { background: #f57c00; }
     #spin-wheel-btn:disabled { background: #ccc; cursor: not-allowed; }
+    #wheel-status-text {
+      font-size: 13px;
+      color: #666;
+      margin: 0;
+    }
     #wheel-multiplier-text {
       font-size: 13px;
       color: #8a6d00;
@@ -232,7 +237,7 @@
     }
     #toast.visible { opacity: 1; }
 
-    #admin-notification {
+    #big-notification {
       display: none;
       position: fixed;
       top: 24px;
@@ -249,7 +254,7 @@
       color: #8a6d00;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     }
-    #admin-notification-close {
+    #big-notification-close {
       position: absolute;
       top: 8px;
       right: 12px;
@@ -382,6 +387,7 @@
       </div>
       <div id="wheel-side">
         <button id="spin-wheel-btn" type="button">Spin the Wheel!</button>
+        <p id="wheel-status-text" style="display: none;"></p>
         <p id="wheel-multiplier-text" style="display: none;"></p>
         <ul id="wheel-chances-list"></ul>
       </div>
@@ -448,9 +454,9 @@
 
   <div id="toast"></div>
 
-  <div id="admin-notification">
-    <button id="admin-notification-close" type="button" aria-label="Close">&times;</button>
-    <div id="admin-notification-message"></div>
+  <div id="big-notification">
+    <button id="big-notification-close" type="button" aria-label="Close">&times;</button>
+    <div id="big-notification-message"></div>
   </div>
 
   <script type="module">
@@ -532,6 +538,7 @@
       updateBalance();
       renderCollection();
       updateDailyRewardUI();
+      updateWheelSpinUI();
       updateWheelMultiplierUI();
       await showPendingNotifications();
     }
@@ -674,7 +681,7 @@
       if (notifications.length === 0) return;
 
       for (const note of notifications) {
-        await showAdminNotification(note.message);
+        await showBigNotification(note.message);
       }
 
       profile.pendingNotifications = [];
@@ -739,18 +746,19 @@
       setTimeout(() => toast.classList.remove("visible"), 3000);
     }
 
-    // Bigger notification for admin-given points/pets. Unlike the toast
-    // above, it stays on screen until the player clicks the × themselves.
-    const adminNotification = document.getElementById("admin-notification");
-    const adminNotificationMessage = document.getElementById("admin-notification-message");
-    const adminNotificationClose = document.getElementById("admin-notification-close");
+    // Bigger notification, used for admin-given points/pets and for wheel
+    // spin results. Unlike the toast above, it stays on screen until the
+    // player clicks the × themselves.
+    const bigNotification = document.getElementById("big-notification");
+    const bigNotificationMessage = document.getElementById("big-notification-message");
+    const bigNotificationClose = document.getElementById("big-notification-close");
 
-    function showAdminNotification(message) {
+    function showBigNotification(message) {
       return new Promise((resolve) => {
-        adminNotificationMessage.textContent = message;
-        adminNotification.style.display = "block";
-        adminNotificationClose.onclick = () => {
-          adminNotification.style.display = "none";
+        bigNotificationMessage.textContent = message;
+        bigNotification.style.display = "block";
+        bigNotificationClose.onclick = () => {
+          bigNotification.style.display = "none";
           resolve();
         };
       });
@@ -798,6 +806,9 @@
 
     // ---------- Spin Wheel ----------
     const WHEEL_MULTIPLIER_MINUTES = 15;
+    // Same rainbow used for the "exclusive" tier everywhere else (see the
+    // .tier-exclusive / .rarity-exclusive gradient above).
+    const RAINBOW_COLORS = ["#ff3b3b", "#ffa63b", "#ffee3b", "#3bff6b", "#3bb0ff", "#b03bff"];
     // Percent ranges (min up to but not including max) must add up to 100,
     // and must line up with the wheel's conic-gradient slices below.
     const WHEEL_SEGMENTS = [
@@ -805,20 +816,37 @@
       { min: 50, max: 75, type: "points40", color: "#43a047", label: "+40 points" },
       { min: 75, max: 87, type: "multiplier", color: "#ffa726", label: "2x Practice Quiz points (15 min)" },
       { min: 87, max: 98, type: "points100", color: "#ab47bc", label: "+100 points" },
-      { min: 98, max: 100, type: "pet", color: "#ffd700", label: "Exclusive pet!" }
+      { min: 98, max: 100, type: "pet", label: "Exclusive pet!" }
     ];
+
+    // Builds this segment's slice of the conic-gradient. The exclusive pet
+    // slice gets a rainbow sweep instead of one flat color.
+    function wheelSegmentGradientStops(seg) {
+      if (seg.type !== "pet") return `${seg.color} ${seg.min}% ${seg.max}%`;
+      const step = (seg.max - seg.min) / (RAINBOW_COLORS.length - 1);
+      return RAINBOW_COLORS.map((color, i) => `${color} ${seg.min + step * i}%`).join(", ");
+    }
 
     const wheelEl = document.getElementById("wheel");
     wheelEl.style.background = "conic-gradient(" +
-      WHEEL_SEGMENTS.map((seg) => `${seg.color} ${seg.min}% ${seg.max}%`).join(", ") + ")";
+      WHEEL_SEGMENTS.map(wheelSegmentGradientStops).join(", ") + ")";
 
     const wheelChancesList = document.getElementById("wheel-chances-list");
     wheelChancesList.innerHTML = WHEEL_SEGMENTS
-      .map((seg) => `<li><span style="color:${seg.color}; font-weight:bold;">${seg.label}</span>: ${seg.max - seg.min}%</li>`)
+      .map((seg) => {
+        // The exclusive pet prize reuses the same rainbow "exclusive" text
+        // style used elsewhere (hatch chances, collection cards).
+        const labelHtml = seg.type === "pet"
+          ? `<span class="rarity-exclusive">${seg.label}</span>`
+          : `<span style="color:${seg.color}; font-weight:bold;">${seg.label}</span>`;
+        return `<li>${labelHtml}: ${seg.max - seg.min}%</li>`;
+      })
       .join("");
 
     const spinWheelBtn = document.getElementById("spin-wheel-btn");
+    const wheelStatusText = document.getElementById("wheel-status-text");
     const wheelMultiplierText = document.getElementById("wheel-multiplier-text");
+    let wheelStatusTimer = null;
     let wheelMultiplierTimer = null;
     let wheelRotation = 0;
     let spinning = false;
@@ -828,10 +856,39 @@
       return WHEEL_SEGMENTS.find((seg) => r >= seg.min && r < seg.max);
     }
 
+    // One spin per reward day (same 7am Mountain Time reset as the daily
+    // login reward, see getRewardDayId()/getNextResetTime() above).
+    function updateWheelSpinUI() {
+      clearInterval(wheelStatusTimer);
+      const alreadySpunToday = profile.lastWheelSpinDay === getRewardDayId();
+
+      if (!alreadySpunToday) {
+        spinWheelBtn.disabled = false;
+        wheelStatusText.style.display = "none";
+        return;
+      }
+
+      spinWheelBtn.disabled = true;
+      const tick = () => {
+        const msLeft = getNextResetTime() - Date.now();
+        if (msLeft <= 0) {
+          updateWheelSpinUI(); // the reset moment just passed — flip back to spinnable
+          return;
+        }
+        wheelStatusText.style.display = "block";
+        wheelStatusText.textContent =
+          `You've spun today — next spin unlocks in ${formatCountdown(msLeft)} (7am Mountain Time).`;
+      };
+      tick();
+      wheelStatusTimer = setInterval(tick, 1000);
+    }
+
     spinWheelBtn.addEventListener("click", async () => {
       if (spinning) return;
+      if (profile.lastWheelSpinDay === getRewardDayId()) return; // guards against a stale enabled button
       spinning = true;
       spinWheelBtn.disabled = true;
+      profile.lastWheelSpinDay = getRewardDayId();
 
       const segment = pickWheelSegment();
       const segStartDeg = segment.min * 3.6;
@@ -850,7 +907,7 @@
       await applyWheelReward(segment);
 
       spinning = false;
-      spinWheelBtn.disabled = false;
+      updateWheelSpinUI(); // re-locks the button and starts the countdown to tomorrow
     });
 
     async function applyWheelReward(segment) {
@@ -859,7 +916,7 @@
         profile.wheelBonusTotal = (profile.wheelBonusTotal || 0) + amount;
         await saveProfile();
         updateBalance();
-        showToast(`You won +${amount} points!`);
+        await showBigNotification(`You won +${amount} points!`);
         return;
       }
 
@@ -867,23 +924,25 @@
         profile.wheelMultiplierExpiresAt = Date.now() + WHEEL_MULTIPLIER_MINUTES * 60000;
         await saveProfile();
         updateWheelMultiplierUI();
-        showToast(`You won 2x Practice Quiz points for the next ${WHEEL_MULTIPLIER_MINUTES} minutes!`);
+        await showBigNotification(`You won 2x Practice Quiz points for the next ${WHEEL_MULTIPLIER_MINUTES} minutes!`);
         return;
       }
 
       // Exclusive pet — same pool and duplicate-refund rule as hatching an egg.
       const animalName = generateAnimal("exclusive");
       const isDuplicate = profile.animals.some((a) => a.name === animalName);
+      let message;
       if (isDuplicate) {
         profile.bonusRefunds += DUPLICATE_REFUND;
-        showToast(`You won an exclusive pet, but you already have ${animalName}! Converted into +${DUPLICATE_REFUND} bonus points.`);
+        message = `You won an exclusive pet, but you already have ${animalName}! Converted into +${DUPLICATE_REFUND} bonus points.`;
       } else {
         profile.animals.push({ name: animalName, tier: "exclusive", hatchedAt: Date.now() });
-        showToast(`You won an exclusive pet: ${animalName}!`);
+        message = `You won an exclusive pet: ${animalName}!`;
       }
       await saveProfile();
       updateBalance();
       renderCollection();
+      await showBigNotification(message);
     }
 
     function updateWheelMultiplierUI() {
