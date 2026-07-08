@@ -107,9 +107,14 @@
       cursor: not-allowed;
     }
 
+    #hatch-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
     #egg-stage {
       text-align: center;
-      margin-top: 20px;
       transition: opacity 0.6s ease;
     }
     #egg-stage.fading {
@@ -321,12 +326,14 @@
 
     <div id="hatch-tab" class="tab-panel">
       <p>Answer questions on the <a id="practice-quiz-link" href="quiz.html">Practice Quiz</a> to earn points, then come back here and spend them. Eggs cost 20 points and hatch the moment you buy them.</p>
-      <button id="buy-egg-btn" type="button">Buy Egg (20 points)</button>
+      <div id="hatch-row">
+        <button id="buy-egg-btn" type="button">Buy Egg (20 points)</button>
+        <div id="egg-stage" style="display: none;">
+          <div id="egg-card" class="egg-card">🥚</div>
+        </div>
+      </div>
       <p>Hatch chances:</p>
       <ul id="hatch-chances-list"></ul>
-      <div id="egg-stage" style="display: none;">
-        <div id="egg-card" class="egg-card">🥚</div>
-      </div>
     </div>
 
     <div id="collection-tab" class="tab-panel" style="display: none;">
